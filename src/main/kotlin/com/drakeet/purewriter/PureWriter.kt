@@ -20,6 +20,9 @@
 
 package com.drakeet.purewriter
 
+import com.drakeet.purewriter.net.Client
+import com.drakeet.purewriter.net.PingPongDelegate
+import com.drakeet.purewriter.net.sendArticle
 import io.netty.channel.Channel
 import io.reactivex.Completable
 import io.reactivex.disposables.Disposable
