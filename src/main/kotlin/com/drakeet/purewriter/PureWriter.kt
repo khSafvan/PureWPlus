@@ -20,6 +20,10 @@
 
 package com.drakeet.purewriter
 
+import com.drakeet.purewriter.model.ArticleMessage
+import com.drakeet.purewriter.model.ChannelActive
+import com.drakeet.purewriter.model.EmptyArticleMessage
+import com.drakeet.purewriter.model.WordCountMessage
 import com.drakeet.purewriter.net.Client
 import com.drakeet.purewriter.net.PingPongDelegate
 import com.drakeet.purewriter.net.sendArticle
