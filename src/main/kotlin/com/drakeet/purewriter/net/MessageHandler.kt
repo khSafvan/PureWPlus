@@ -20,13 +20,13 @@
 
 package com.drakeet.purewriter.net
 
-import com.drakeet.purewriter.ArticleMessage
-import com.drakeet.purewriter.ChannelActive
-import com.drakeet.purewriter.EmptyArticleMessage
 import com.drakeet.purewriter.Log
 import com.drakeet.purewriter.RxBus
-import com.drakeet.purewriter.WordCountMessage
 import com.drakeet.purewriter.jsonTo
+import com.drakeet.purewriter.model.ArticleMessage
+import com.drakeet.purewriter.model.ChannelActive
+import com.drakeet.purewriter.model.EmptyArticleMessage
+import com.drakeet.purewriter.model.WordCountMessage
 import com.drakeet.purewriter.protocol.PureWriterProtocol
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
