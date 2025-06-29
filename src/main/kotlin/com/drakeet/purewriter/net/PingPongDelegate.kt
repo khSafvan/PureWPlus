@@ -1,8 +1,8 @@
 package com.drakeet.purewriter.net
 
-import com.drakeet.purewriter.ChannelActive
 import com.drakeet.purewriter.Log
 import com.drakeet.purewriter.RxBus
+import com.drakeet.purewriter.model.ChannelActive
 import io.netty.channel.Channel
 import io.reactivex.Observable
 import io.reactivex.disposables.Disposable
