@@ -20,7 +20,7 @@
 
 package com.drakeet.purewriter.net
 
-import com.drakeet.purewriter.ArticleMessage
+import com.drakeet.purewriter.model.ArticleMessage
 import com.drakeet.purewriter.protocol.PureWriterProtocol
 import com.drakeet.purewriter.toJson
 import io.netty.channel.Channel
