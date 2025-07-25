@@ -23,6 +23,19 @@ This repository contains the source code of the earlier 1.x desktop app. The cur
 ./gradlew jfxNative
 ```
 
+### Project Structure
+
+- `proto/`: Protocol Buffer definition (`Protocols.proto`) defining the TCP synchronization protocol.
+- `scripts/`: Utility and icon generation scripts (`gen_iconset.py`).
+- `sketch/`: Artwork master images and macOS icns files.
+- `src/main/deploy/package/`: Platform-specific native installer icons (Windows, macOS, Linux).
+- `src/main/java/com/drakeet/purewriter/protocol/`: Generated Java Protocol Buffer code.
+- `src/main/kotlin/com/drakeet/purewriter/`:
+  - `net/`: Netty socket client, protocol framing, message handlers, and heartbeat logic.
+  - `model/`: Data transfer messages (`ArticleMessage`, `WordCountMessage`, `Events`).
+  - Application entry (`Main.kt`), FXML controller (`PureWriter.kt`), settings, and UI themes.
+- `src/main/resources/com/drakeet/purewriter/`: JavaFX FXML markup, styles, fonts, and icons.
+
 ### LICENSE
 
 =======
