@@ -68,14 +68,12 @@ dependencies {
   testCompile 'junit:junit:4.13.2'
 
   compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-  // compile "com.squareup.okio:okio:2.3.0"
   compile 'io.netty:netty-all:4.1.118.Final'
   compile 'com.google.protobuf:protobuf-java:3.25.5'
   compile 'io.reactivex.rxjava2:rxjava:2.2.19'
   compile 'com.jakewharton.rxrelay2:rxrelay:2.1.1'
   compile 'com.google.code.gson:gson:2.10.1'
   compile 'io.reactivex:rxjavafx:2.0.2'
-  compile 'com.github.houbb:opencc4j:1.6.0'
 }
 
 compileKotlin {
