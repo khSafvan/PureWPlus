@@ -20,7 +20,6 @@
 
 package com.drakeet.purewriter
 
-import com.github.houbb.opencc4j.util.ZhConverterUtil
 import javafx.stage.Stage
 import java.util.*
 
@@ -51,9 +50,24 @@ val isTraditionalChinese
     this == Locale.TRADITIONAL_CHINESE || this == Locale("zh", "HK")
   }
 
+private val zhHansToHant = mapOf(
+  '纯' to '純', '写' to '寫', '开' to '開', '关' to '關',
+  '请' to '請', '机' to '機', '连' to '連', '与' to '與',
+  '断' to '斷', '点' to '點', '击' to '擊', '顶' to '頂',
+  '云' to '雲', '图' to '圖', '标' to '標', '获' to '獲',
+  '于' to '於', '确' to '確', '将' to '將', '会' to '會',
+  '识' to '識', '别' to '別', '为' to '為', '组' to '組',
+  '数' to '數', '动' to '動', '当' to '當', '须' to '須',
+  '协' to '協'
+)
+
 fun String.toTraditionalIfNeeded(): String {
-  if (!isZh) return this
-  return if (isTraditionalChinese) ZhConverterUtil.toTraditional(this) else this
+  if (!isZh || !isTraditionalChinese) return this
+  val sb = StringBuilder(length)
+  for (ch in this) {
+    sb.append(zhHansToHant[ch] ?: ch)
+  }
+  return sb.toString()
 }
 
 val stageTitle
