@@ -20,6 +20,5 @@
 
 package com.drakeet.purewriter.model
 
-class Pong
 class EmptyArticleMessage
 class ChannelActive(val active: Boolean)
