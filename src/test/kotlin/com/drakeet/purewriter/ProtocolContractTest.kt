@@ -119,6 +119,13 @@ class ProtocolContractTest {
   }
 
   @Test
+  fun testTraditionalChineseConversion() {
+    // String extension function check
+    val text = "纯纯写作"
+    assertNotNull(text.toTraditionalIfNeeded())
+  }
+
+  @Test
   fun testNettyProtobufVarintFramingPipeline() {
     // 1. Outbound encoder pipeline matching Client.kt
     val outbound = EmbeddedChannel(
