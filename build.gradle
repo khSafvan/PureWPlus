@@ -49,10 +49,10 @@ jar {
 }
 
 jfx {
-  appName = "Pure Writer"
+  appName = "PureWPlus"
   nativeReleaseVersion = VERSION
   mainClass = 'com.drakeet.purewriter.Main'
-  vendor = 'drakeet.com'
+  vendor = 'PureWPlus Project'
   libFolderName = "libs"
   addPackagerJar = true
   copyAdditionalAppResourcesToJar = true
@@ -85,7 +85,7 @@ compileTestKotlin {
 
 task generateJar(type: Copy, dependsOn: build) {
   from('build/libs') {
-    include "PureWriter-${VERSION}.jar"
+    include "PureWPlus-${VERSION}.jar"
   }
   into('jar')
 }
