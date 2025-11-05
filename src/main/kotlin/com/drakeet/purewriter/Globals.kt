@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 2019 Drakeet Xu <drakeet@drakeet.com>
+ * Modifications Copyright (C) 2026 PureWPlus Project Contributors
  *
- * This file is part of Pure Writer Desktop
+ * This file is part of Pure Writer Desktop / PureWPlus
  *
  * Pure Writer Desktop is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,6 +73,6 @@ fun String.toTraditionalIfNeeded(): String {
 
 val stageTitle
   get() = when {
-    isZh -> "纯纯写作".toTraditionalIfNeeded()
-    else -> "Pure Writer"
+    isZh -> "PureWPlus (纯纯写作)".toTraditionalIfNeeded()
+    else -> "PureWPlus"
   }
