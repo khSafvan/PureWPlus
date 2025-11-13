@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 2019 Drakeet Xu <drakeet@drakeet.com>
+ * Modifications Copyright (C) 2026 PureWPlus Project Contributors
  *
- * This file is part of Pure Writer Desktop
+ * This file is part of Pure Writer Desktop / PureWPlus
  *
  * Pure Writer Desktop is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -181,7 +182,7 @@ class PureWriter : Initializable {
       未打开任何文章
       请在纯纯写作手机版中打开一篇文章
 
-      纯纯写作桌面版 v$version
+      PureWPlus v$version
     """
         .trimIndent()
         .toTraditionalIfNeeded()
@@ -190,7 +191,7 @@ class PureWriter : Initializable {
         No article selected
         Please open an article on Pure Writer mobile
         
-        Pure Writer Desktop v$version
+        PureWPlus v$version
       """
         .trimIndent()
     }
@@ -246,21 +247,21 @@ class PureWriter : Initializable {
 
     ipBottomLabel.text = if (isZh) {
       """
-        纯纯写作桌面版 v$version  ⇋  纯纯写作 v$appVersion+
-        当前「纯纯写作桌面版」必须和「纯纯写作」v$appVersion 或以上版本才能正常协作
+        PureWPlus v$version  ⇋  纯纯写作 v$appVersion+
+        当前「PureWPlus」必须和「纯纯写作」v$appVersion 或以上版本才能正常协作
       """
         .trimIndent()
         .toTraditionalIfNeeded()
     } else {
       """
-        Pure Writer Desktop v$version  ⇋  Pure Writer v$appVersion+
-        The current Desktop only works with Pure Writer for Android v$appVersion or above!
+        PureWPlus v$version  ⇋  Pure Writer v$appVersion+
+        The current PureWPlus only works with Pure Writer for Android v$appVersion or above!
       """.trimIndent()
     }
 
     ipLayout.isVisible = true
     isSyncingTitle = true
-    mainStage.title = "Pure Writer"
+    mainStage.title = "PureWPlus"
     isSyncingTitle = false
     isSyncingContent = true
     contentView.replaceText("")
