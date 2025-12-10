@@ -97,5 +97,16 @@ class Client {
       isConnecting = false
     }
   }
+
+  fun stop() {
+    try {
+      channel?.close()
+      group?.shutdownGracefully()
+    } catch (e: Exception) {
+      // ignore
+    } finally {
+      isConnecting = false
+    }
+  }
 }
 
