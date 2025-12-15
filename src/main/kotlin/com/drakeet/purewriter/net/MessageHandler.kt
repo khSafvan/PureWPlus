@@ -35,19 +35,15 @@ import javafx.application.Platform
 class MessageHandler : SimpleChannelInboundHandler<PureWriterProtocol.Message>() {
 
   override fun channelRead0(context: ChannelHandlerContext, message: PureWriterProtocol.Message) {
-    Platform.runLater {
-      Log.d("message.messageTyp: ${message.messageType}")
-      when (message.messageType) {
-        "ArticleMessage" -> RxBus.post(message.content.jsonTo(ArticleMessage::class))
-        "EmptyArticleMessage" -> RxBus.post(EmptyArticleMessage())
-        "WordCountMessage" -> RxBus.post(message.content.jsonTo(WordCountMessage::class))
-        "DisconnectMessage" -> context.disconnect()
-        // No need now, we will directly call the pong()
-        // "Pong" -> RxBus.post(Pong())
-      }
-      if (message.messageType != "DisconnectMessage") {
-        PingPongDelegate.pong()
-      }
+    Log.d("message.messageType: ${message.messageType}")
+    when (message.messageType) {
+      "ArticleMessage" -> RxBus.post(message.content.jsonTo(ArticleMessage::class))
+      "EmptyArticleMessage" -> RxBus.post(EmptyArticleMessage())
+      "WordCountMessage" -> RxBus.post(message.content.jsonTo(WordCountMessage::class))
+      "DisconnectMessage" -> context.disconnect()
+    }
+    if (message.messageType != "DisconnectMessage") {
+      PingPongDelegate.pong()
     }
   }
 
