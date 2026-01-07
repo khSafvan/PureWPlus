@@ -28,6 +28,7 @@ import com.drakeet.purewriter.model.WordCountMessage
 import com.drakeet.purewriter.net.Client
 import com.drakeet.purewriter.net.PingPongDelegate
 import com.drakeet.purewriter.net.sendArticle
+import com.drakeet.purewriter.sync.SyncCoordinator
 import io.netty.channel.Channel
 import io.reactivex.Completable
 import io.reactivex.disposables.Disposable
@@ -83,6 +84,7 @@ class PureWriter : Initializable {
   private lateinit var dayNightSwitch: ImageView
 
   private val client = Client()
+  private val coordinator = SyncCoordinator.default
 
   private val channel: Channel? get() = client.channel
 
@@ -105,41 +107,51 @@ class PureWriter : Initializable {
     showIpViews()
     ipView.text = Settings.ip
 
+    coordinator.onArticleUpdated = { updatedTitle, updatedContent, start, end ->
+      beginSyncing()
+      title = updatedTitle
+      mainStage.title = (if (title.isNotEmpty()) title else "Untitled")
+      contentView.replaceText(updatedContent)
+      contentView.isVisible = true
+      runCatching { contentView.selectRange(start.coerceAtLeast(1) - 1, end.coerceAtLeast(1) - 1) }
+      Platform.runLater { contentView.selectRange(start, end) }
+      isSyncingSelection = false
+      isSyncingTitle = false
+      hideIP()
+      hideEmpty()
+    }
+
+    coordinator.onWordCountUpdated = { countText ->
+      mainStage.title = "$title · $countText"
+    }
+
+    coordinator.onEmptyArticle = {
+      showEmpty()
+      hideIP()
+    }
+
     RxBus.event(ChannelActive::class)
       .observeOn(platform())
       .subscribe {
-        if (it.active) {
-          // hideIP()
-          // Wait for the article
-        } else {
+        coordinator.handleChannelActive(it.active)
+        if (!it.active) {
           showIpViews()
         }
       }
 
     RxBus.event(ArticleMessage::class)
       .subscribe {
-        beginSyncing()
-        mainStage.title = (if (it.title.isNotEmpty()) it.title else "Untitled").apply { title = this }
-        contentView.replaceText(it.content)
-        contentView.isVisible = true
-        // workaround to trigger focus
-        runCatching { contentView.selectRange(it.selectionStart - 1, it.selectionEnd - 1) }
-        Platform.runLater { contentView.selectRange(it.selectionStart, it.selectionEnd) }
-        isSyncingSelection = false
-        isSyncingTitle = false
-        hideIP()
-        hideEmpty()
+        coordinator.handleIncomingArticle(it, channel)
       }
 
     RxBus.event(WordCountMessage::class)
       .subscribe {
-        mainStage.title = "$title · ${it.text}"
+        coordinator.handleWordCount(it)
       }
 
     RxBus.event(EmptyArticleMessage::class)
       .subscribe {
-        showEmpty()
-        hideIP()
+        coordinator.handleEmptyArticle(it)
       }
 
     contentView.textProperty().addListener { _, _, newValue ->
@@ -149,7 +161,7 @@ class PureWriter : Initializable {
         return@addListener
       }
       if (!isSyncing) {
-        invalidate(content = newValue)
+        coordinator.handleLocalTextChange(newValue, channel)
       }
       isSyncingContent = false
     }
@@ -261,10 +273,8 @@ class PureWriter : Initializable {
 
     ipLayout.isVisible = true
     isSyncingTitle = true
-    mainStage.title = "PureWPlus"
+    mainStage.title = "PureWPlus (Disconnected)"
     isSyncingTitle = false
-    isSyncingContent = true
-    contentView.replaceText("")
     Platform.runLater { ipView.requestFocus() }
     ipView.textProperty().removeListener(ipObserver)
     ipView.textProperty().addListener(ipObserver)
