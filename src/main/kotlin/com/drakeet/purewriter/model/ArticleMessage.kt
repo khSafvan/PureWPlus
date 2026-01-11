@@ -26,6 +26,6 @@ package com.drakeet.purewriter.model
 data class ArticleMessage(
   val title: String,
   val content: String,
-  val selectionStart: Int,
-  val selectionEnd: Int
+  val selectionStart: Int = 0,
+  val selectionEnd: Int = 0
 )
