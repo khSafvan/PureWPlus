@@ -21,6 +21,7 @@
 
 package com.drakeet.purewriter
 
+import com.drakeet.purewriter.i18n.I18n
 import com.drakeet.purewriter.model.ArticleMessage
 import com.drakeet.purewriter.model.ChannelActive
 import com.drakeet.purewriter.model.EmptyArticleMessage
@@ -28,6 +29,7 @@ import com.drakeet.purewriter.model.WordCountMessage
 import com.drakeet.purewriter.net.Client
 import com.drakeet.purewriter.net.PingPongDelegate
 import com.drakeet.purewriter.net.sendArticle
+import com.drakeet.purewriter.storage.BackupEntry
 import com.drakeet.purewriter.sync.SyncCoordinator
 import io.netty.channel.Channel
 import io.reactivex.Completable
@@ -38,21 +40,22 @@ import io.reactivex.schedulers.Schedulers
 import io.reactivex.schedulers.Schedulers.computation
 import javafx.application.Platform
 import javafx.beans.value.ChangeListener
+import javafx.collections.FXCollections
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
-import javafx.scene.control.IndexRange
-import javafx.scene.control.Label
-import javafx.scene.control.TextArea
-import javafx.scene.control.TextField
+import javafx.scene.control.*
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
+import javafx.scene.input.KeyCode
+import javafx.scene.layout.BorderPane
+import javafx.scene.layout.HBox
 import javafx.scene.layout.StackPane
 import javafx.scene.layout.VBox
 import javafx.scene.text.Font
 import javafx.util.Duration
 import java.net.URL
+import java.text.SimpleDateFormat
 import java.util.*
-
 
 class PureWriter : Initializable {
 
@@ -60,10 +63,13 @@ class PureWriter : Initializable {
   private val appVersion = "17.7.10"
 
   @FXML
-  private lateinit var emptyView: Label
+  private lateinit var rootLayout: BorderPane
 
   @FXML
-  private lateinit var rootLayout: StackPane
+  private lateinit var centerContainer: StackPane
+
+  @FXML
+  private lateinit var emptyView: Label
 
   @FXML
   private lateinit var ipLayout: VBox
@@ -83,40 +89,115 @@ class PureWriter : Initializable {
   @FXML
   private lateinit var dayNightSwitch: ImageView
 
+  @FXML
+  private lateinit var backupsDrawer: VBox
+
+  @FXML
+  private lateinit var drawerTitleLabel: Label
+
+  @FXML
+  private lateinit var closeDrawerBtn: Button
+
+  @FXML
+  private lateinit var backupsListView: ListView<String>
+
+  @FXML
+  private lateinit var restoreBackupBtn: Button
+
+  @FXML
+  private lateinit var statusBar: HBox
+
+  @FXML
+  private lateinit var statusConnectionDot: Label
+
+  @FXML
+  private lateinit var statusConnectionLabel: Label
+
+  @FXML
+  private lateinit var statusSaveLabel: Label
+
+  @FXML
+  private lateinit var statusCountLabel: Label
+
+  @FXML
+  private lateinit var toggleTypewriterBtn: Button
+
+  @FXML
+  private lateinit var toggleDrawerBtn: Button
+
   private val client = Client()
   private val coordinator = SyncCoordinator.default
 
   private val channel: Channel? get() = client.channel
 
   private var title = "Untitled"
+  private var isTypewriterMode = false
+  private var backupEntries: List<BackupEntry> = emptyList()
 
   override fun initialize(location: URL?, resources: ResourceBundle?) {
     rootLayout.styleClass.addAll("pane")
     ipLayout.styleClass.addAll("pane")
 
-    contentView.font = Font.loadFont(javaClass.getResourceAsStream("SourceHanSansCN-Light.ttf"), 16.toDouble())
-    ipNoteLabel.font = Font.loadFont(javaClass.getResourceAsStream("SourceHanSansCN-Light.ttf"), 14.toDouble())
-    ipBottomLabel.font = ipNoteLabel.font
-    emptyView.font = ipNoteLabel.font
-    ipView.font = Font.loadFont(javaClass.getResourceAsStream("SourceHanSansCN-Light.ttf"), 18.toDouble())
+    val regularFont = Font.loadFont(javaClass.getResourceAsStream("SourceHanSansCN-Light.ttf"), 16.toDouble())
+    if (regularFont != null) {
+      contentView.font = regularFont
+      ipNoteLabel.font = Font.loadFont(javaClass.getResourceAsStream("SourceHanSansCN-Light.ttf"), 14.toDouble()) ?: regularFont
+      ipBottomLabel.font = ipNoteLabel.font
+      emptyView.font = ipNoteLabel.font
+      ipView.font = Font.loadFont(javaClass.getResourceAsStream("SourceHanSansCN-Light.ttf"), 18.toDouble()) ?: regularFont
+    }
+
     dayNightSwitch.image = Image(javaClass.getResourceAsStream("moon.png"))
     dayNightSwitch.setOnMouseClicked {
       Settings.darkMode = (!Settings.darkMode)
         .also { mainStage.scene.setDarkMode(it) }
     }
-    showIpViews()
+
+    // Localize UI labels
+    drawerTitleLabel.text = I18n.get("drawer.backups")
+    restoreBackupBtn.text = I18n.get("drawer.restore")
+    toggleTypewriterBtn.text = I18n.get("menu.typewriter")
+    toggleDrawerBtn.text = I18n.get("drawer.backups")
+    emptyView.text = I18n.get("empty.title", version)
+    ipNoteLabel.text = I18n.get("ip.note")
+    ipBottomLabel.text = I18n.get("ip.bottom", version, appVersion)
+
+    // Setup Drawer and Action listeners
+    closeDrawerBtn.setOnAction { toggleBackupsDrawer() }
+    toggleDrawerBtn.setOnAction { toggleBackupsDrawer() }
+    restoreBackupBtn.setOnAction { restoreSelectedBackup() }
+    toggleTypewriterBtn.setOnAction { toggleTypewriterMode() }
+
+    // Restore cached content from DocumentStore if available
+    if (coordinator.currentContent.isNotEmpty()) {
+      contentView.replaceText(coordinator.currentContent)
+      title = coordinator.currentTitle
+      mainStage.title = title
+      hideIP()
+      hideEmpty()
+      updateCounts(coordinator.currentContent)
+      setSaveStatus(true)
+    } else {
+      showIpViews()
+      updateCounts("")
+      setSaveStatus(true)
+    }
+    updateConnectionStatus(false)
     ipView.text = Settings.ip
 
+    // Sync coordinator event listeners
     coordinator.onArticleUpdated = { updatedTitle, updatedContent, start, end ->
       beginSyncing()
       title = updatedTitle
-      mainStage.title = (if (title.isNotEmpty()) title else "Untitled")
+      mainStage.title = if (title.isNotEmpty()) title else "Untitled"
       contentView.replaceText(updatedContent)
       contentView.isVisible = true
       runCatching { contentView.selectRange(start.coerceAtLeast(1) - 1, end.coerceAtLeast(1) - 1) }
       Platform.runLater { contentView.selectRange(start, end) }
       isSyncingSelection = false
       isSyncingTitle = false
+      setSaveStatus(true)
+      updateCounts(updatedContent)
       hideIP()
       hideEmpty()
     }
@@ -134,6 +215,7 @@ class PureWriter : Initializable {
       .observeOn(platform())
       .subscribe {
         coordinator.handleChannelActive(it.active)
+        updateConnectionStatus(it.active)
         if (!it.active) {
           showIpViews()
         }
@@ -156,18 +238,21 @@ class PureWriter : Initializable {
 
     contentView.textProperty().addListener { _, _, newValue ->
       Log.d("newText: $newValue")
+      updateCounts(newValue ?: "")
       if (channel?.isActive != true) {
-        showIpViews()
+        setSaveStatus(false)
+        coordinator.handleLocalTextChange(newValue ?: "", channel)
         return@addListener
       }
       if (!isSyncing) {
-        coordinator.handleLocalTextChange(newValue, channel)
+        coordinator.handleLocalTextChange(newValue ?: "", channel)
+        setSaveStatus(true)
       }
       isSyncingContent = false
     }
+
     contentView.selectionProperty().addListener { _, _, newValue ->
       if (channel?.isActive != true) {
-        showIpViews()
         return@addListener
       }
       if (!isSyncing) {
@@ -176,43 +261,121 @@ class PureWriter : Initializable {
       isSyncingSelection = false
     }
 
+    // Keyboard Shortcuts
+    rootLayout.setOnKeyPressed { event ->
+      if (event.isShortcutDown && event.code == KeyCode.S) {
+        coordinator.documentStore.saveDocument("active", title, contentView.text ?: "", isDirty = false)
+        setSaveStatus(true)
+        event.consume()
+      } else if (event.isShortcutDown && event.isShiftDown && event.code == KeyCode.B) {
+        toggleBackupsDrawer()
+        event.consume()
+      } else if (event.isShortcutDown && event.isShiftDown && event.code == KeyCode.D) {
+        // Toggle distraction-free mode (hide/show status bar)
+        val visible = !statusBar.isVisible
+        statusBar.isVisible = visible
+        statusBar.isManaged = visible
+        event.consume()
+      } else if (event.code == KeyCode.F11) {
+        runCatching { mainStage.isFullScreen = !mainStage.isFullScreen }
+        event.consume()
+      }
+    }
+
     JavaFxObservable.interval(Duration.seconds(1.0))
       .subscribeOn(computation())
       .observeOn(platform())
       .subscribe {
         if (channel?.isActive != true) {
-          showIpViews()
+          updateConnectionStatus(false)
         } else {
+          updateConnectionStatus(true)
           PingPongDelegate.ping(channel!!)
         }
       }
   }
 
-  private fun showEmpty() {
-    emptyView.text = if (isZh) {
-      """
-      未打开任何文章
-      请在纯纯写作手机版中打开一篇文章
-
-      PureWPlus v$version
-    """
-        .trimIndent()
-        .toTraditionalIfNeeded()
+  private fun updateConnectionStatus(connected: Boolean) {
+    if (connected) {
+      statusConnectionDot.text = "●"
+      statusConnectionDot.styleClass.setAll("status-dot-online")
+      statusConnectionLabel.text = I18n.get("status.connected")
     } else {
-      """
-        No article selected
-        Please open an article on Pure Writer mobile
-        
-        PureWPlus v$version
-      """
-        .trimIndent()
+      statusConnectionDot.text = "●"
+      statusConnectionDot.styleClass.setAll("status-dot-offline")
+      statusConnectionLabel.text = I18n.get("status.disconnected")
     }
+  }
+
+  private fun updateCounts(text: String) {
+    val charCount = text.length
+    val words = if (text.isBlank()) 0 else text.trim().split("\\s+".toRegex()).size
+    statusCountLabel.text = I18n.get("status.words", words, charCount)
+  }
+
+  private fun setSaveStatus(saved: Boolean) {
+    statusSaveLabel.text = if (saved) I18n.get("status.saved") else I18n.get("status.unsaved")
+  }
+
+  private fun toggleTypewriterMode() {
+    isTypewriterMode = !isTypewriterMode
+    if (isTypewriterMode) {
+      toggleTypewriterBtn.style = "-fx-border-color: #3B82F6; -fx-text-fill: #3B82F6;"
+      contentView.positionCaret(contentView.caretPosition)
+    } else {
+      toggleTypewriterBtn.style = ""
+    }
+  }
+
+  private fun toggleBackupsDrawer() {
+    val show = !backupsDrawer.isVisible
+    backupsDrawer.isVisible = show
+    backupsDrawer.isManaged = show
+    if (show) {
+      refreshBackups()
+    }
+  }
+
+  private fun refreshBackups() {
+    backupEntries = coordinator.backupEngine.listBackups("active")
+    val df = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    val items = if (backupEntries.isEmpty()) {
+      listOf(I18n.get("drawer.no_backups"))
+    } else {
+      backupEntries.map { entry ->
+        val date = df.format(Date(entry.timestamp))
+        val size = if (entry.file.exists()) "${entry.file.length()} B" else ""
+        "$date · ${entry.reason}  $size"
+      }
+    }
+    backupsListView.items = FXCollections.observableArrayList(items)
+  }
+
+  private fun restoreSelectedBackup() {
+    val selectedIndex = backupsListView.selectionModel.selectedIndex
+    if (selectedIndex < 0 || selectedIndex >= backupEntries.size) return
+    val entry = backupEntries[selectedIndex]
+    val restoredText = coordinator.backupEngine.readBackupContent(entry.file)
+
+    // Pre-restore snapshot for zero data loss
+    coordinator.backupEngine.createBackup("active", contentView.text ?: "", title, reason = "pre-restore")
+    coordinator.handleLocalTextChange(restoredText, channel)
+    contentView.replaceText(restoredText)
+    setSaveStatus(false)
+    refreshBackups()
+  }
+
+  private fun showEmpty() {
+    emptyView.text = I18n.get("empty.title", version)
     emptyView.isVisible = true
+    if (contentView.text.isNotEmpty()) {
+      coordinator.backupEngine.createBackup("active", contentView.text, title, reason = "pre-empty-state")
+    }
     isSyncingContent = true
     contentView.replaceText("")
     contentView.isVisible = false
     isSyncingTitle = true
-    mainStage.title = stageTitle
+    runCatching { mainStage.title = stageTitle }
   }
 
   private fun hideEmpty() {
@@ -234,46 +397,13 @@ class PureWriter : Initializable {
       }
       return
     }
-    ipNoteLabel.text = if (isZh) {
-      """
-        未连接或与手机断开
-        请打开纯纯写作 Android 版并点击其顶部的云图标获得 IP 地址填于下方
-        一旦输入正确 IP，它将自动连接
-        提示：
-        * 你可以在 IP 地址中输入中文句号来替代英文句号，比如：1。1。1。1 将会被识别为 1.1.1.1
-        * 如果您的 IP 地址是以 192.168.1 开头，则您可以直接输入最后一组数字即可自动连接
-      """
-        .trimIndent()
-        .toTraditionalIfNeeded()
-    } else {
-      """
-        Unconnected or disconnected
-        Please open Pure Writer for Android and click its top cloud icon 
-        to get an IP address into the below input field
-        Once the correct IP is entered, it will be auto connected
-        Tips:
-        * If your IP address starts with 192.168.1, you can enter the last number directly to connect automatically
-      """
-        .trimIndent()
-    }
 
-    ipBottomLabel.text = if (isZh) {
-      """
-        PureWPlus v$version  ⇋  纯纯写作 v$appVersion+
-        当前「PureWPlus」必须和「纯纯写作」v$appVersion 或以上版本才能正常协作
-      """
-        .trimIndent()
-        .toTraditionalIfNeeded()
-    } else {
-      """
-        PureWPlus v$version  ⇋  Pure Writer v$appVersion+
-        The current PureWPlus only works with Pure Writer for Android v$appVersion or above!
-      """.trimIndent()
-    }
+    ipNoteLabel.text = I18n.get("ip.note")
+    ipBottomLabel.text = I18n.get("ip.bottom", version, appVersion)
 
     ipLayout.isVisible = true
     isSyncingTitle = true
-    mainStage.title = "PureWPlus (Disconnected)"
+    runCatching { mainStage.title = "PureWPlus (${I18n.get("status.disconnected")})" }
     isSyncingTitle = false
     Platform.runLater { ipView.requestFocus() }
     ipView.textProperty().removeListener(ipObserver)
@@ -299,8 +429,8 @@ class PureWriter : Initializable {
   }
 
   private fun invalidate(
-    title: String = mainStage.title,
-    content: String = contentView.text,
+    title: String = runCatching { mainStage.title }.getOrNull() ?: this.title,
+    content: String = contentView.text ?: "",
     selection: IndexRange = contentView.selection
   ) {
     Log.d("invalidate: $title, $content, $selection")
@@ -313,7 +443,6 @@ class PureWriter : Initializable {
   }
 
   private var clientDisposable: Disposable? = null
-
   private var lastConnectingIp: String? = null
 
   private fun startNettyClient(ip: String) {
