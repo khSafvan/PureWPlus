@@ -2,82 +2,121 @@
 
 <!--
   ~ Copyright (C) 2019 Drakeet Xu <drakeet@drakeet.com>
+  ~ Modifications Copyright (C) 2026 PureWPlus Project Contributors
   ~
-  ~ This file is part of Pure Writer Desktop
-  ~
-  ~ Pure Writer Desktop is free software: you can redistribute it and/or modify
-  ~ it under the terms of the GNU General Public License as published by
-  ~ the Free Software Foundation, either version 3 of the License, or
-  ~ (at your option) any later version.
-  ~
-  ~ rebase-server is distributed in the hope that it will be useful,
-  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
-  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  ~
-  ~ See the GNU General Public License for more details.
-  ~
-  ~ You should have received a copy of the GNU General Public License
-  ~ along with rebase-server. If not, see <http://www.gnu.org/licenses/>.
+  ~ This file is part of Pure Writer Desktop / PureWPlus
   -->
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
-<StackPane fx:id="rootLayout" prefHeight="540.0" prefWidth="720.0" xmlns="http://javafx.com/javafx/8.0.261" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.drakeet.purewriter.PureWriter">
 
-    <TextArea fx:id="contentView" maxWidth="720.0" prefHeight="540.0" promptText="Content" wrapText="true" BorderPane.alignment="CENTER">
-        <padding>
-            <Insets left="24.0" right="24.0"/>
-        </padding>
-        <font>
-            <Font name="Source Han Sans CN" size="16.0"/>
-        </font>
-    </TextArea>
+<BorderPane fx:id="rootLayout" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.261" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.drakeet.purewriter.PureWriter">
 
-    <Label fx:id="emptyView" alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="centeredTextArea" textAlignment="CENTER" BorderPane.alignment="CENTER">
-        <font>
-            <Font name="Source Han Sans CN" size="18.0"/>
-        </font>
-    </Label>
-    <VBox fx:id="ipLayout" alignment="CENTER" StackPane.alignment="CENTER">
-        <children>
-            <Label fx:id="ipNoteLabel" alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefWidth="720.0" styleClass="centeredTextArea" textAlignment="CENTER">
+    <center>
+        <StackPane fx:id="centerContainer">
+            <TextArea fx:id="contentView" maxWidth="760.0" prefHeight="540.0" promptText="Content" wrapText="true" BorderPane.alignment="CENTER">
+                <padding>
+                    <Insets left="28.0" right="28.0" top="16.0" bottom="16.0"/>
+                </padding>
+                <font>
+                    <Font name="Source Han Sans CN" size="16.0"/>
+                </font>
+            </TextArea>
+
+            <Label fx:id="emptyView" alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="centeredTextArea" textAlignment="CENTER">
                 <font>
                     <Font name="Source Han Sans CN" size="18.0"/>
                 </font>
-                <VBox.margin>
-                    <Insets/>
-                </VBox.margin>
             </Label>
-            <TextField fx:id="ipView" alignment="CENTER" maxWidth="240.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="36.0" prefWidth="400.0" promptText="IP (eg. 192.168.43.1)">
-                <VBox.margin>
-                    <Insets bottom="24.0" top="24.0"/>
-                </VBox.margin>
-                <font>
-                    <Font size="24.0"/>
-                </font>
-            </TextField>
-            <Label fx:id="ipBottomLabel" alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="centeredTextArea" textAlignment="CENTER">
-                <font>
-                    <Font name="Source Han Sans CN" size="18.0"/>
-                </font>
-                <VBox.margin>
-                    <Insets/>
-                </VBox.margin>
-            </Label>
-        </children>
-    </VBox>
 
-    <ImageView fx:id="dayNightSwitch" StackPane.alignment="TOP_RIGHT" fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
-        <StackPane.margin>
-            <Insets top="16.0" right="16.0"/>
-        </StackPane.margin>
-    </ImageView>
+            <VBox fx:id="ipLayout" alignment="CENTER" StackPane.alignment="CENTER">
+                <children>
+                    <Label fx:id="ipNoteLabel" alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefWidth="720.0" styleClass="centeredTextArea" textAlignment="CENTER">
+                        <font>
+                            <Font name="Source Han Sans CN" size="18.0"/>
+                        </font>
+                    </Label>
+                    <TextField fx:id="ipView" alignment="CENTER" maxWidth="260.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="38.0" prefWidth="400.0" promptText="IP (eg. 192.168.43.1)">
+                        <VBox.margin>
+                            <Insets bottom="24.0" top="24.0"/>
+                        </VBox.margin>
+                        <font>
+                            <Font size="22.0"/>
+                        </font>
+                    </TextField>
+                    <Label fx:id="ipBottomLabel" alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="centeredTextArea" textAlignment="CENTER">
+                        <font>
+                            <Font name="Source Han Sans CN" size="16.0"/>
+                        </font>
+                    </Label>
+                </children>
+            </VBox>
+        </StackPane>
+    </center>
 
-</StackPane>
+    <right>
+        <VBox fx:id="backupsDrawer" prefWidth="280.0" styleClass="drawer-pane" visible="false" managed="false">
+            <padding>
+                <Insets top="12.0" right="12.0" bottom="12.0" left="12.0"/>
+            </padding>
+            <children>
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <children>
+                        <Label fx:id="drawerTitleLabel" text="Backups &amp; History" styleClass="drawer-title" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"/>
+                        <Button fx:id="closeDrawerBtn" text="✕" styleClass="icon-button"/>
+                    </children>
+                    <VBox.margin>
+                        <Insets bottom="10.0"/>
+                    </VBox.margin>
+                </HBox>
+                <ListView fx:id="backupsListView" VBox.vgrow="ALWAYS" styleClass="backup-list"/>
+                <HBox alignment="CENTER" spacing="8.0">
+                    <VBox.margin>
+                        <Insets top="10.0"/>
+                    </VBox.margin>
+                    <children>
+                        <Button fx:id="restoreBackupBtn" text="Restore Snapshot" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" styleClass="primary-button"/>
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+    </right>
+
+    <bottom>
+        <HBox fx:id="statusBar" alignment="CENTER_LEFT" prefHeight="32.0" spacing="10.0" styleClass="status-bar">
+            <padding>
+                <Insets left="16.0" right="16.0"/>
+            </padding>
+            <children>
+                <Label fx:id="statusConnectionDot" text="●" styleClass="status-dot-offline"/>
+                <Label fx:id="statusConnectionLabel" text="Offline" styleClass="status-text"/>
+                <Label text="·" styleClass="status-separator"/>
+                <Label fx:id="statusSaveLabel" text="Saved" styleClass="status-text"/>
+
+                <Pane HBox.hgrow="ALWAYS"/>
+
+                <Label fx:id="statusCountLabel" text="0 words · 0 chars" styleClass="status-text"/>
+                <Label text="·" styleClass="status-separator"/>
+                <Button fx:id="toggleTypewriterBtn" text="Typewriter" styleClass="status-button"/>
+                <Button fx:id="toggleDrawerBtn" text="Backups" styleClass="status-button"/>
+                <ImageView fx:id="dayNightSwitch" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" styleClass="theme-icon">
+                    <HBox.margin>
+                        <Insets left="4.0"/>
+                    </HBox.margin>
+                </ImageView>
+            </children>
+        </HBox>
+    </bottom>
+
+</BorderPane>
