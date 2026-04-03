@@ -125,6 +125,27 @@ class PureWriter : Initializable {
   @FXML
   private lateinit var toggleDrawerBtn: Button
 
+  @FXML
+  private lateinit var librarySidebar: VBox
+
+  @FXML
+  private lateinit var sidebarTitleLabel: Label
+
+  @FXML
+  private lateinit var newDocBtn: Button
+
+  @FXML
+  private lateinit var closeSidebarBtn: Button
+
+  @FXML
+  private lateinit var searchDocField: TextField
+
+  @FXML
+  private lateinit var libraryListView: ListView<String>
+
+  @FXML
+  private lateinit var toggleSidebarBtn: Button
+
   private val client = Client()
   private val coordinator = SyncCoordinator.default
 
@@ -133,6 +154,7 @@ class PureWriter : Initializable {
   private var title = "Untitled"
   private var isTypewriterMode = false
   private var backupEntries: List<BackupEntry> = emptyList()
+  private var currentFilteredDocs: List<com.drakeet.purewriter.storage.DocumentMetadata> = emptyList()
 
   override fun initialize(location: URL?, resources: ResourceBundle?) {
     rootLayout.styleClass.addAll("pane")
@@ -158,6 +180,9 @@ class PureWriter : Initializable {
     restoreBackupBtn.text = I18n.get("drawer.restore")
     toggleTypewriterBtn.text = I18n.get("menu.typewriter")
     toggleDrawerBtn.text = I18n.get("drawer.backups")
+    toggleSidebarBtn.text = I18n.get("library.toggle")
+    sidebarTitleLabel.text = I18n.get("library.title")
+    searchDocField.promptText = I18n.get("library.search")
     emptyView.text = I18n.get("empty.title", version)
     ipNoteLabel.text = I18n.get("ip.note")
     ipBottomLabel.text = I18n.get("ip.bottom", version, appVersion)
@@ -167,6 +192,29 @@ class PureWriter : Initializable {
     toggleDrawerBtn.setOnAction { toggleBackupsDrawer() }
     restoreBackupBtn.setOnAction { restoreSelectedBackup() }
     toggleTypewriterBtn.setOnAction { toggleTypewriterMode() }
+    toggleSidebarBtn.setOnAction { toggleLibrarySidebar() }
+    closeSidebarBtn.setOnAction { toggleLibrarySidebar() }
+
+    // Library actions & search
+    newDocBtn.setOnAction {
+      createNewStory()
+    }
+    searchDocField.textProperty().addListener { _, _, _ ->
+      refreshLibrary()
+    }
+    libraryListView.selectionModel.selectedIndexProperty().addListener { _, _, newIdx ->
+      val idx = newIdx.toInt()
+      if (idx >= 0 && idx < currentFilteredDocs.size) {
+        val selectedDoc = currentFilteredDocs[idx]
+        if (selectedDoc.id != coordinator.activeDocId) {
+          switchStory(selectedDoc.id)
+        }
+      }
+    }
+    coordinator.onLibraryChanged = {
+      Platform.runLater { refreshLibrary() }
+    }
+    refreshLibrary()
 
     // Restore cached content from DocumentStore if available
     if (coordinator.currentContent.isNotEmpty()) {
@@ -270,6 +318,9 @@ class PureWriter : Initializable {
       } else if (event.isShortcutDown && event.isShiftDown && event.code == KeyCode.B) {
         toggleBackupsDrawer()
         event.consume()
+      } else if (event.isShortcutDown && event.isShiftDown && event.code == KeyCode.L) {
+        toggleLibrarySidebar()
+        event.consume()
       } else if (event.isShortcutDown && event.isShiftDown && event.code == KeyCode.D) {
         // Toggle distraction-free mode (hide/show status bar)
         val visible = !statusBar.isVisible
@@ -325,6 +376,66 @@ class PureWriter : Initializable {
     } else {
       toggleTypewriterBtn.style = ""
     }
+  }
+
+  private fun toggleLibrarySidebar() {
+    val show = !librarySidebar.isVisible
+    librarySidebar.isVisible = show
+    librarySidebar.isManaged = show
+    if (show) {
+      refreshLibrary()
+    }
+  }
+
+  private fun refreshLibrary() {
+    val query = searchDocField.text?.trim()?.toLowerCase() ?: ""
+    val allDocs = coordinator.documentStore.listDocuments()
+    currentFilteredDocs = if (query.isEmpty()) {
+      allDocs
+    } else {
+      allDocs.filter { it.title.toLowerCase().contains(query) }
+    }
+
+    val df = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
+    val items = if (currentFilteredDocs.isEmpty()) {
+      listOf(I18n.get("library.no_docs"))
+    } else {
+      currentFilteredDocs.map { doc ->
+        val activePrefix = if (doc.id == coordinator.activeDocId) "▶ " else "  "
+        val timeStr = df.format(Date(doc.lastModifiedTime))
+        val countInfo = if (doc.wordCount > 0) "${doc.wordCount}w" else "${doc.charCount}c"
+        "$activePrefix${doc.title}\n   $timeStr · $countInfo"
+      }
+    }
+    libraryListView.items = FXCollections.observableArrayList(items)
+
+    // Select active doc in list without triggering listener loop
+    val activeIdx = currentFilteredDocs.indexOfFirst { it.id == coordinator.activeDocId }
+    if (activeIdx >= 0) {
+      libraryListView.selectionModel.select(activeIdx)
+    }
+  }
+
+  private fun createNewStory() {
+    val newRecord = coordinator.createNewDocument(title = "New Story")
+    switchStory(newRecord.metadata.id)
+  }
+
+  private fun switchStory(docId: String) {
+    // Save current active state before switching
+    coordinator.handleLocalTextChange(contentView.text ?: "", channel)
+    
+    val switchedDoc = coordinator.switchDocument(docId)
+    if (switchedDoc != null) {
+      title = switchedDoc.metadata.title
+      contentView.replaceText(switchedDoc.content)
+      mainStage.title = title
+      updateCounts(switchedDoc.content)
+      setSaveStatus(true)
+      hideIP()
+      hideEmpty()
+    }
+    refreshLibrary()
   }
 
   private fun toggleBackupsDrawer() {
