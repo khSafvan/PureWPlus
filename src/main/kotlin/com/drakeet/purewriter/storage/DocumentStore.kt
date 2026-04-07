@@ -37,7 +37,9 @@ data class DocumentMetadata(
   var baseHash: String = "",
   var lastSyncTime: Long = 0,
   var lastModifiedTime: Long = 0,
-  var isDirty: Boolean = false
+  var isDirty: Boolean = false,
+  var wordCount: Int = 0,
+  var charCount: Int = 0
 )
 
 data class DocumentRecord(
@@ -63,7 +65,7 @@ class DocumentStore(
       val dir = documentsDirProvider()
       dir.mkdirs()
 
-      val safeId = id.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+      val safeId = id.replace(Regex("[^a-zA-Z0-9_\\-\\u4e00-\\u9fa5]"), "_")
       val textFile = File(dir, "$safeId.txt")
       val metaFile = File(dir, "$safeId.meta.json")
 
@@ -73,13 +75,18 @@ class DocumentStore(
       val contentHash = sha256(content)
       val newBaseHash = if (updateBaseHash || existingMeta.baseHash.isEmpty()) contentHash else existingMeta.baseHash
 
+      val words = if (content.isBlank()) 0 else content.trim().split("\\s+".toRegex()).size
+      val chars = content.length
+
       val meta = DocumentMetadata(
         id = safeId,
-        title = title,
+        title = if (title.isNotBlank()) title else "Untitled",
         baseHash = newBaseHash,
         lastSyncTime = if (updateBaseHash) now else existingMeta.lastSyncTime,
         lastModifiedTime = now,
-        isDirty = isDirty
+        isDirty = isDirty,
+        wordCount = words,
+        charCount = chars
       )
 
       // Atomic write of text content
@@ -99,7 +106,7 @@ class DocumentStore(
   fun loadDocument(id: String = "active"): DocumentRecord? {
     synchronized(lock) {
       val dir = documentsDirProvider()
-      val safeId = id.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+      val safeId = id.replace(Regex("[^a-zA-Z0-9_\\-\\u4e00-\\u9fa5]"), "_")
       val textFile = File(dir, "$safeId.txt")
       val metaFile = File(dir, "$safeId.meta.json")
 
@@ -108,6 +115,44 @@ class DocumentStore(
       val content = String(Files.readAllBytes(textFile.toPath()), StandardCharsets.UTF_8)
       val meta = loadMetadata(metaFile, safeId)
       return DocumentRecord(meta, content)
+    }
+  }
+
+  fun listDocuments(): List<DocumentMetadata> {
+    synchronized(lock) {
+      val dir = documentsDirProvider()
+      if (!dir.exists() || !dir.isDirectory) return emptyList()
+
+      return dir.listFiles { file -> file.isFile && file.name.endsWith(".meta.json") }
+        ?.mapNotNull { metaFile ->
+          val safeId = metaFile.name.removeSuffix(".meta.json")
+          loadMetadata(metaFile, safeId)
+        }
+        ?.sortedByDescending { it.lastModifiedTime }
+        ?: emptyList()
+    }
+  }
+
+  fun deleteDocument(id: String): Boolean {
+    synchronized(lock) {
+      val dir = documentsDirProvider()
+      val safeId = id.replace(Regex("[^a-zA-Z0-9_\\-\\u4e00-\\u9fa5]"), "_")
+      val textFile = File(dir, "$safeId.txt")
+      val metaFile = File(dir, "$safeId.meta.json")
+      val tDeleted = textFile.delete()
+      val mDeleted = metaFile.delete()
+      return tDeleted || mDeleted
+    }
+  }
+
+  fun generateDocId(title: String): String {
+    val cleaned = title.trim()
+      .replace(Regex("[^a-zA-Z0-9_\\-\\u4e00-\\u9fa5]"), "_")
+      .trim('_')
+    return if (cleaned.isNotEmpty()) {
+      "doc_$cleaned"
+    } else {
+      "doc_untitled"
     }
   }
 
