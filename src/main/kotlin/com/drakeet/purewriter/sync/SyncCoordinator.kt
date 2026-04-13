@@ -22,12 +22,12 @@
 package com.drakeet.purewriter.sync
 
 import com.drakeet.purewriter.model.ArticleMessage
-import com.drakeet.purewriter.model.ChannelActive
 import com.drakeet.purewriter.model.EmptyArticleMessage
 import com.drakeet.purewriter.model.WordCountMessage
 import com.drakeet.purewriter.net.Client
 import com.drakeet.purewriter.net.sendArticle
 import com.drakeet.purewriter.storage.BackupEngine
+import com.drakeet.purewriter.storage.DocumentRecord
 import com.drakeet.purewriter.storage.DocumentStore
 import io.netty.channel.Channel
 
@@ -36,6 +36,9 @@ class SyncCoordinator(
   val backupEngine: BackupEngine = BackupEngine.default,
   val client: Client = Client()
 ) {
+
+  var activeDocId: String = "active"
+    private set
 
   var currentTitle: String = "Untitled"
     private set
@@ -54,6 +57,7 @@ class SyncCoordinator(
   var onConnectionStatusChanged: ((active: Boolean) -> Unit)? = null
   var onWordCountUpdated: ((text: String) -> Unit)? = null
   var onEmptyArticle: (() -> Unit)? = null
+  var onLibraryChanged: (() -> Unit)? = null
 
   init {
     // Restore cached document from disk if available
@@ -61,7 +65,6 @@ class SyncCoordinator(
     if (cached != null) {
       currentTitle = cached.metadata.title
       currentContent = cached.content
-      // If was not dirty when saved, base is content
       if (!cached.metadata.isDirty) {
         baseContent = cached.content
       }
@@ -71,13 +74,22 @@ class SyncCoordinator(
   fun handleIncomingArticle(article: ArticleMessage, channel: Channel? = client.channel) {
     val incomingContent = article.content
     val incomingTitle = if (article.title.isNotEmpty()) article.title else "Untitled"
+    val storyDocId = if (article.title.isNotBlank()) documentStore.generateDocId(incomingTitle) else "active"
+
+    // If switching stories from mobile
+    if (storyDocId != activeDocId && currentContent.isNotEmpty()) {
+      documentStore.saveDocument(activeDocId, currentTitle, currentContent, isDirty = (currentContent != baseContent))
+    }
+    activeDocId = storyDocId
 
     val isLocalModified = currentContent != baseContent && currentContent.isNotEmpty()
     val isRemoteModified = incomingContent != baseContent
 
     if (isLocalModified && isRemoteModified && currentContent != incomingContent) {
-      // Both desktop and phone changed the text since last sync: perform three-way merge
-      backupEngine.createBackup("active", currentContent, currentTitle, reason = "pre-3way-merge")
+      backupEngine.createBackup(activeDocId, currentContent, currentTitle, reason = "pre-3way-merge")
+      if (activeDocId != "active") {
+        backupEngine.createBackup("active", currentContent, currentTitle, reason = "pre-3way-merge")
+      }
 
       val mergeResult = Diff3.merge(baseContent, currentContent, incomingContent)
       if (!mergeResult.hasConflict) {
@@ -85,7 +97,7 @@ class SyncCoordinator(
         currentContent = mergeResult.mergedText
         currentTitle = incomingTitle
         baseContent = mergeResult.mergedText
-        documentStore.saveDocument("active", currentTitle, currentContent, isDirty = false, updateBaseHash = true)
+        saveActiveDocument(updateBaseHash = true, isDirty = false)
 
         if (channel?.isActive == true) {
           channel.sendArticle(currentTitle, currentContent, article.selectionStart, article.selectionEnd)
@@ -93,10 +105,13 @@ class SyncCoordinator(
         onArticleUpdated?.invoke(currentTitle, currentContent, article.selectionStart, article.selectionEnd)
       } else {
         // Conflicting edits: backup remote, write conflict markers, and notify UI
-        backupEngine.createBackup("active_remote", incomingContent, incomingTitle, reason = "conflict-remote")
+        backupEngine.createBackup("${activeDocId}_remote", incomingContent, incomingTitle, reason = "conflict-remote")
+        if (activeDocId != "active") {
+          backupEngine.createBackup("active_remote", incomingContent, incomingTitle, reason = "conflict-remote")
+        }
         currentContent = mergeResult.mergedText
         currentTitle = incomingTitle
-        documentStore.saveDocument("active", currentTitle, currentContent, isDirty = true)
+        saveActiveDocument(updateBaseHash = false, isDirty = true)
 
         onConflictDetected?.invoke(currentTitle, mergeResult)
         onArticleUpdated?.invoke(currentTitle, currentContent, 0, 0)
@@ -104,31 +119,84 @@ class SyncCoordinator(
     } else {
       // Clean sync from phone
       if (currentContent.isNotEmpty() && currentContent != incomingContent) {
-        backupEngine.createBackup("active", currentContent, currentTitle, reason = "remote-sync")
+        backupEngine.createBackup(activeDocId, currentContent, currentTitle, reason = "remote-sync")
       }
       currentContent = incomingContent
       currentTitle = incomingTitle
       baseContent = incomingContent
-      documentStore.saveDocument("active", currentTitle, currentContent, isDirty = false, updateBaseHash = true)
+      saveActiveDocument(updateBaseHash = true, isDirty = false)
       onArticleUpdated?.invoke(currentTitle, currentContent, article.selectionStart, article.selectionEnd)
     }
+    onLibraryChanged?.invoke()
   }
 
   fun handleLocalTextChange(newContent: String, channel: Channel? = client.channel, start: Int = 0, end: Int = 0) {
     if (newContent == currentContent) return
     currentContent = newContent
-    documentStore.saveDocument("active", currentTitle, newContent, isDirty = true)
+    saveActiveDocument(updateBaseHash = false, isDirty = true)
 
     if (channel?.isActive == true) {
       channel.sendArticle(currentTitle, newContent, start, end)
     }
   }
 
+  fun switchDocument(docId: String): DocumentRecord? {
+    // Save current document before switching
+    if (currentContent.isNotEmpty()) {
+      saveActiveDocument(updateBaseHash = false, isDirty = (currentContent != baseContent))
+    }
+
+    val targetRecord = documentStore.loadDocument(docId) ?: return null
+    activeDocId = targetRecord.metadata.id
+    currentTitle = targetRecord.metadata.title
+    currentContent = targetRecord.content
+    baseContent = targetRecord.content
+
+    onArticleUpdated?.invoke(currentTitle, currentContent, 0, 0)
+    return targetRecord
+  }
+
+  fun createNewDocument(title: String = "Untitled"): DocumentRecord {
+    if (currentContent.isNotEmpty()) {
+      saveActiveDocument(updateBaseHash = false, isDirty = (currentContent != baseContent))
+    }
+    val newId = "doc_${System.currentTimeMillis()}"
+    val record = documentStore.saveDocument(newId, title, "", isDirty = false, updateBaseHash = true)
+    activeDocId = newId
+    currentTitle = title
+    currentContent = ""
+    baseContent = ""
+
+    onArticleUpdated?.invoke(currentTitle, currentContent, 0, 0)
+    onLibraryChanged?.invoke()
+    return record
+  }
+
+  fun deleteDocument(docId: String): Boolean {
+    val deleted = documentStore.deleteDocument(docId)
+    if (deleted && activeDocId == docId) {
+      activeDocId = "active"
+      currentTitle = "Untitled"
+      currentContent = ""
+      baseContent = ""
+      onArticleUpdated?.invoke(currentTitle, currentContent, 0, 0)
+    }
+    onLibraryChanged?.invoke()
+    return deleted
+  }
+
+  private fun saveActiveDocument(updateBaseHash: Boolean, isDirty: Boolean) {
+    documentStore.saveDocument(activeDocId, currentTitle, currentContent, isDirty = isDirty, updateBaseHash = updateBaseHash)
+    // Mirror to active for fallback compatibility
+    if (activeDocId != "active") {
+      documentStore.saveDocument("active", currentTitle, currentContent, isDirty = isDirty, updateBaseHash = updateBaseHash)
+    }
+  }
+
   fun handleChannelActive(active: Boolean) {
     isConnected = active
     if (!active) {
-      // Zero Data Loss Guarantee: Persist buffer to disk on disconnection; do NOT clear editor
-      documentStore.saveDocument("active", currentTitle, currentContent, isDirty = (currentContent != baseContent))
+      saveActiveDocument(updateBaseHash = false, isDirty = (currentContent != baseContent))
     }
     onConnectionStatusChanged?.invoke(active)
   }
