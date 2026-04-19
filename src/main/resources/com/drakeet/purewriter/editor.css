@@ -173,3 +173,56 @@
 .icon-button:hover {
     -fx-text-fill: #111827;
 }
+
+/* Library Sidebar */
+.sidebar-pane {
+    -fx-background-color: #F9FAFB;
+    -fx-border-color: transparent #E5E7EB transparent transparent;
+    -fx-border-width: 1px;
+}
+
+.sidebar-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111827;
+}
+
+.search-field {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E5E7EB;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-font-size: 11px;
+    -fx-padding: 4px 8px;
+    -fx-text-fill: #111827;
+}
+
+.search-field:focused {
+    -fx-border-color: #3B82F6;
+}
+
+.library-list {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E5E7EB;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.library-list .list-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #1F2937;
+    -fx-font-size: 12px;
+    -fx-padding: 8px 10px;
+    -fx-border-color: transparent transparent #F3F4F6 transparent;
+    -fx-border-width: 1px;
+}
+
+.library-list .list-cell:hover {
+    -fx-background-color: #F3F4F6;
+}
+
+.library-list .list-cell:selected {
+    -fx-background-color: #EFF6FF;
+    -fx-text-fill: #1D4ED8;
+    -fx-font-weight: bold;
+}
