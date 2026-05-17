@@ -54,46 +54,46 @@ class Client {
   private var group: NioEventLoopGroup? = null
 
   fun start(ip: String, port: Int) {
+    if (isConnecting) return
+    isConnecting = true
     try {
-      try {
-        if (isConnecting) return
-        isConnecting = true
-        group = NioEventLoopGroup()
-        val bootstrap = Bootstrap()
-          .group(group!!)
-          .channel(NioSocketChannel::class.java)
-          .option(ChannelOption.SO_KEEPALIVE, true)
-          .remoteAddress(InetSocketAddress(ip, port))
-          .handler(object : ChannelInitializer<SocketChannel>() {
-            @Throws(Exception::class)
-            override fun initChannel(ch: SocketChannel) {
-              Log.d("Connecting...")
-              with(ch.pipeline()) {
-                addLast(ProtobufVarint32FrameDecoder())
-                addLast(ProtobufDecoder(PureWriterProtocol.Message.getDefaultInstance()), ProtobufVarint32LengthFieldPrepender())
-                addLast(ProtobufEncoder())
-                addLast(MessageHandler())
-              }
+      group = NioEventLoopGroup(1)
+      val bootstrap = Bootstrap()
+        .group(group!!)
+        .channel(NioSocketChannel::class.java)
+        .option(ChannelOption.SO_KEEPALIVE, true)
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000)
+        .remoteAddress(InetSocketAddress(ip, port))
+        .handler(object : ChannelInitializer<SocketChannel>() {
+          @Throws(Exception::class)
+          override fun initChannel(ch: SocketChannel) {
+            Log.d("Connecting...")
+            with(ch.pipeline()) {
+              addLast(ProtobufVarint32FrameDecoder())
+              addLast(ProtobufDecoder(PureWriterProtocol.Message.getDefaultInstance()), ProtobufVarint32LengthFieldPrepender())
+              addLast(ProtobufEncoder())
+              addLast(MessageHandler())
             }
-          })
+          }
+        })
 
-        Log.d("bootstrap.connect().sync().channel()")
-        channel = bootstrap.connect().sync().channel()
-        Log.d("The server is successfully connected.")
+      Log.d("bootstrap.connect().sync().channel()")
+      val future = bootstrap.connect().sync()
+      channel = future.channel()
+      Log.d("The server is successfully connected.")
 
-        channel?.closeFuture()?.sync()
-        isConnecting = false
-        Log.d("Connection is closed")
-      } finally {
-        try {
-          group?.shutdownGracefully()?.sync()
-        } catch (i: InterruptedException) {
-          Log.d("Interrupted")
-        }
-        isConnecting = false
+      channel?.closeFuture()?.sync()
+      Log.d("Connection is closed")
+    } catch (e: Exception) {
+      Log.d("Connect error: ${e.message}")
+    } finally {
+      try {
+        group?.shutdownGracefully(0, 1, java.util.concurrent.TimeUnit.SECONDS)?.sync()
+      } catch (i: Throwable) {
+        // ignore
       }
-    } catch (e: InterruptedException) {
-      e.printStackTrace()
+      group = null
+      channel = null
       isConnecting = false
     }
   }
