@@ -31,7 +31,7 @@ object PingPongDelegate {
     Log.d("Pinging...")
     channel.writeAndFlush(newJsonMessage(type = "Ping"))
     timer?.dispose()
-    timer = Observable.timer(3, TimeUnit.SECONDS)
+    timer = Observable.timer(10, TimeUnit.SECONDS)
       .subscribe {
         Log.d("pinging: $pinging")
         if (pinging) disconnect(channel)
