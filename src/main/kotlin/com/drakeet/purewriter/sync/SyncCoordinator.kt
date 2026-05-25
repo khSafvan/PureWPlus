@@ -21,6 +21,8 @@
 
 package com.drakeet.purewriter.sync
 
+import com.drakeet.purewriter.Log
+
 import com.drakeet.purewriter.model.ArticleMessage
 import com.drakeet.purewriter.model.EmptyArticleMessage
 import com.drakeet.purewriter.model.WordCountMessage
@@ -193,10 +195,20 @@ class SyncCoordinator(
     }
   }
 
-  fun handleChannelActive(active: Boolean) {
+  fun handleChannelActive(active: Boolean, channel: Channel? = client.channel) {
     isConnected = active
     if (!active) {
       saveActiveDocument(updateBaseHash = false, isDirty = (currentContent != baseContent))
+    } else {
+      // Reconnected! If we have dirty offline modifications, push them to mobile
+      val isDirty = currentContent != baseContent && currentContent.isNotEmpty()
+      if (isDirty && channel?.isActive == true) {
+        Log.d("Pushing dirty offline modifications to phone upon reconnect")
+        channel.sendArticle(currentTitle, currentContent, 0, 0)
+        // Update baseContent once pushed
+        baseContent = currentContent
+        saveActiveDocument(updateBaseHash = true, isDirty = false)
+      }
     }
     onConnectionStatusChanged?.invoke(active)
   }
