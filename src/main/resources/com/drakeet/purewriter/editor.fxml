@@ -23,32 +23,6 @@
 
 <BorderPane fx:id="rootLayout" prefHeight="600.0" prefWidth="860.0" xmlns="http://javafx.com/javafx/8.0.261" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.drakeet.purewriter.PureWriter">
 
-    <left>
-        <VBox fx:id="librarySidebar" prefWidth="240.0" styleClass="sidebar-pane" visible="true" managed="true">
-            <padding>
-                <Insets top="12.0" right="10.0" bottom="12.0" left="10.0"/>
-            </padding>
-            <children>
-                <HBox alignment="CENTER_LEFT" spacing="6.0">
-                    <children>
-                        <Label fx:id="sidebarTitleLabel" text="Library" styleClass="sidebar-title" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"/>
-                        <Button fx:id="newDocBtn" text="+" styleClass="icon-button" style="-fx-font-size: 15px; -fx-font-weight: bold;"/>
-                        <Button fx:id="closeSidebarBtn" text="✕" styleClass="icon-button"/>
-                    </children>
-                    <VBox.margin>
-                        <Insets bottom="8.0"/>
-                    </VBox.margin>
-                </HBox>
-                <TextField fx:id="searchDocField" promptText="Search stories..." styleClass="search-field">
-                    <VBox.margin>
-                        <Insets bottom="8.0"/>
-                    </VBox.margin>
-                </TextField>
-                <ListView fx:id="libraryListView" VBox.vgrow="ALWAYS" styleClass="library-list"/>
-            </children>
-        </VBox>
-    </left>
-
     <center>
         <StackPane fx:id="centerContainer">
             <TextArea fx:id="contentView" maxWidth="760.0" prefHeight="540.0" promptText="Content" wrapText="true" BorderPane.alignment="CENTER">
@@ -125,8 +99,6 @@
                 <Insets left="14.0" right="14.0"/>
             </padding>
             <children>
-                <Button fx:id="toggleSidebarBtn" text="☰ Stories" styleClass="status-button"/>
-                <Label text="·" styleClass="status-separator"/>
                 <Label fx:id="statusConnectionDot" text="●" styleClass="status-dot-offline"/>
                 <Label fx:id="statusConnectionLabel" text="Offline" styleClass="status-text"/>
                 <Label text="·" styleClass="status-separator"/>
