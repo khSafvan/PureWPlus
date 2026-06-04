@@ -41,4 +41,16 @@ object Settings {
     set(value) {
       configManager.update { ip = value }
     }
+
+  var ollamaHost: String
+    get() = configManager.config.ollamaHost
+    set(value) {
+      configManager.update { ollamaHost = value }
+    }
+
+  var ollamaModel: String
+    get() = configManager.config.ollamaModel
+    set(value) {
+      configManager.update { ollamaModel = value }
+    }
 }
