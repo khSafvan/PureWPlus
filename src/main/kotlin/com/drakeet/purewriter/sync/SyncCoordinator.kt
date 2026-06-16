@@ -199,16 +199,6 @@ class SyncCoordinator(
     isConnected = active
     if (!active) {
       saveActiveDocument(updateBaseHash = false, isDirty = (currentContent != baseContent))
-    } else {
-      // Reconnected! If we have dirty offline modifications, push them to mobile
-      val isDirty = currentContent != baseContent && currentContent.isNotEmpty()
-      if (isDirty && channel?.isActive == true) {
-        Log.d("Pushing dirty offline modifications to phone upon reconnect")
-        channel.sendArticle(currentTitle, currentContent, 0, 0)
-        // Update baseContent once pushed
-        baseContent = currentContent
-        saveActiveDocument(updateBaseHash = true, isDirty = false)
-      }
     }
     onConnectionStatusChanged?.invoke(active)
   }
