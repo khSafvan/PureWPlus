@@ -66,31 +66,91 @@
     </center>
 
     <right>
-        <VBox fx:id="backupsDrawer" prefWidth="280.0" styleClass="drawer-pane" visible="false" managed="false">
-            <padding>
-                <Insets top="12.0" right="12.0" bottom="12.0" left="12.0"/>
-            </padding>
-            <children>
-                <HBox alignment="CENTER_LEFT" spacing="8.0">
-                    <children>
-                        <Label fx:id="drawerTitleLabel" text="Backups &amp; History" styleClass="drawer-title" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"/>
-                        <Button fx:id="closeDrawerBtn" text="✕" styleClass="icon-button"/>
-                    </children>
-                    <VBox.margin>
-                        <Insets bottom="10.0"/>
-                    </VBox.margin>
-                </HBox>
-                <ListView fx:id="backupsListView" VBox.vgrow="ALWAYS" styleClass="backup-list"/>
-                <HBox alignment="CENTER" spacing="8.0">
-                    <VBox.margin>
-                        <Insets top="10.0"/>
-                    </VBox.margin>
-                    <children>
-                        <Button fx:id="restoreBackupBtn" text="Restore Snapshot" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" styleClass="primary-button"/>
-                    </children>
-                </HBox>
-            </children>
-        </VBox>
+        <StackPane>
+            <!-- Backups Drawer -->
+            <VBox fx:id="backupsDrawer" prefWidth="280.0" styleClass="drawer-pane" visible="false" managed="false">
+                <padding>
+                    <Insets top="12.0" right="12.0" bottom="12.0" left="12.0"/>
+                </padding>
+                <children>
+                    <HBox alignment="CENTER_LEFT" spacing="8.0">
+                        <children>
+                            <Label fx:id="drawerTitleLabel" text="Backups &amp; History" styleClass="drawer-title" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"/>
+                            <Button fx:id="closeDrawerBtn" text="✕" styleClass="icon-button"/>
+                        </children>
+                        <VBox.margin>
+                            <Insets bottom="10.0"/>
+                        </VBox.margin>
+                    </HBox>
+                    <ListView fx:id="backupsListView" VBox.vgrow="ALWAYS" styleClass="backup-list"/>
+                    <HBox alignment="CENTER" spacing="8.0">
+                        <VBox.margin>
+                            <Insets top="10.0"/>
+                        </VBox.margin>
+                        <children>
+                            <Button fx:id="restoreBackupBtn" text="Restore Snapshot" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" styleClass="primary-button"/>
+                        </children>
+                    </HBox>
+                </children>
+            </VBox>
+
+            <!-- Ollama AI Drawer -->
+            <VBox fx:id="aiDrawer" prefWidth="300.0" styleClass="drawer-pane" visible="false" managed="false">
+                <padding>
+                    <Insets top="12.0" right="12.0" bottom="12.0" left="12.0"/>
+                </padding>
+                <children>
+                    <HBox alignment="CENTER_LEFT" spacing="8.0">
+                        <children>
+                            <Label fx:id="aiTitleLabel" text="Ollama AI" styleClass="drawer-title" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"/>
+                            <Button fx:id="closeAiBtn" text="✕" styleClass="icon-button"/>
+                        </children>
+                        <VBox.margin>
+                            <Insets bottom="8.0"/>
+                        </VBox.margin>
+                    </HBox>
+                    <HBox spacing="6.0" alignment="CENTER_LEFT">
+                        <VBox.margin>
+                            <Insets bottom="8.0"/>
+                        </VBox.margin>
+                        <children>
+                            <TextField fx:id="aiModelField" promptText="llama3, mistral..." HBox.hgrow="ALWAYS" styleClass="search-field"/>
+                            <Button fx:id="refreshAiModelsBtn" text="↻" styleClass="icon-button"/>
+                        </children>
+                    </HBox>
+                    <HBox spacing="6.0" alignment="CENTER">
+                        <VBox.margin>
+                            <Insets bottom="8.0"/>
+                        </VBox.margin>
+                        <children>
+                            <Button fx:id="aiContinueBtn" text="Continue" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308" styleClass="status-button"/>
+                            <Button fx:id="aiPolishBtn" text="Polish" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308" styleClass="status-button"/>
+                            <Button fx:id="aiSummarizeBtn" text="Summarize" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308" styleClass="status-button"/>
+                        </children>
+                    </HBox>
+                    <TextArea fx:id="aiPromptArea" promptText="Ask AI or instruct (e.g. Expand paragraph, write outline...)" prefHeight="70.0" wrapText="true" styleClass="search-field">
+                        <VBox.margin>
+                            <Insets bottom="8.0"/>
+                        </VBox.margin>
+                    </TextArea>
+                    <Button fx:id="aiSendPromptBtn" text="Ask AI" maxWidth="1.7976931348623157E308" styleClass="primary-button">
+                        <VBox.margin>
+                            <Insets bottom="8.0"/>
+                        </VBox.margin>
+                    </Button>
+                    <TextArea fx:id="aiResponseArea" promptText="AI suggestions will appear here..." VBox.vgrow="ALWAYS" wrapText="true" editable="false" styleClass="search-field"/>
+                    <HBox spacing="8.0" alignment="CENTER">
+                        <VBox.margin>
+                            <Insets top="8.0"/>
+                        </VBox.margin>
+                        <children>
+                            <Button fx:id="aiInsertBtn" text="Insert at Cursor" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" styleClass="status-button"/>
+                            <Button fx:id="aiReplaceBtn" text="Replace All" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" styleClass="status-button"/>
+                        </children>
+                    </HBox>
+                </children>
+            </VBox>
+        </StackPane>
     </right>
 
     <bottom>
@@ -109,6 +169,7 @@
                 <Label fx:id="statusCountLabel" text="0 words · 0 chars" styleClass="status-text"/>
                 <Label text="·" styleClass="status-separator"/>
                 <Button fx:id="toggleTypewriterBtn" text="Typewriter" styleClass="status-button"/>
+                <Button fx:id="toggleAiBtn" text="✨ AI" styleClass="status-button"/>
                 <Button fx:id="toggleDrawerBtn" text="Backups" styleClass="status-button"/>
                 <ImageView fx:id="dayNightSwitch" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" styleClass="theme-icon">
                     <HBox.margin>
