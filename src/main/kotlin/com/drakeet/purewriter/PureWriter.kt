@@ -123,53 +123,10 @@ class PureWriter : Initializable {
   private lateinit var toggleTypewriterBtn: Button
 
   @FXML
-  private lateinit var toggleAiBtn: Button
-
-  @FXML
   private lateinit var toggleDrawerBtn: Button
-
-  @FXML
-  private lateinit var aiDrawer: VBox
-
-  @FXML
-  private lateinit var aiTitleLabel: Label
-
-  @FXML
-  private lateinit var closeAiBtn: Button
-
-  @FXML
-  private lateinit var aiModelField: TextField
-
-  @FXML
-  private lateinit var refreshAiModelsBtn: Button
-
-  @FXML
-  private lateinit var aiContinueBtn: Button
-
-  @FXML
-  private lateinit var aiPolishBtn: Button
-
-  @FXML
-  private lateinit var aiSummarizeBtn: Button
-
-  @FXML
-  private lateinit var aiPromptArea: TextArea
-
-  @FXML
-  private lateinit var aiSendPromptBtn: Button
-
-  @FXML
-  private lateinit var aiResponseArea: TextArea
-
-  @FXML
-  private lateinit var aiInsertBtn: Button
-
-  @FXML
-  private lateinit var aiReplaceBtn: Button
 
   private val client = Client()
   private val coordinator = SyncCoordinator.default
-  private val ollamaClient = com.drakeet.purewriter.ai.OllamaClient.default
 
   private val channel: Channel? get() = client.channel
 
@@ -201,14 +158,6 @@ class PureWriter : Initializable {
     restoreBackupBtn.text = I18n.get("drawer.restore")
     toggleTypewriterBtn.text = I18n.get("menu.typewriter")
     toggleDrawerBtn.text = I18n.get("drawer.backups")
-    toggleAiBtn.text = "✨ AI"
-    aiTitleLabel.text = I18n.get("ai.title")
-    aiContinueBtn.text = I18n.get("ai.continue")
-    aiPolishBtn.text = I18n.get("ai.polish")
-    aiSummarizeBtn.text = I18n.get("ai.summarize")
-    aiPromptArea.promptText = I18n.get("ai.prompt_placeholder")
-    aiInsertBtn.text = I18n.get("ai.insert")
-    aiReplaceBtn.text = I18n.get("ai.replace")
     emptyView.text = I18n.get("empty.title", version)
     ipNoteLabel.text = I18n.get("ip.note")
     ipBottomLabel.text = I18n.get("ip.bottom", version, appVersion)
@@ -218,21 +167,6 @@ class PureWriter : Initializable {
     toggleDrawerBtn.setOnAction { toggleBackupsDrawer() }
     restoreBackupBtn.setOnAction { restoreSelectedBackup() }
     toggleTypewriterBtn.setOnAction { toggleTypewriterMode() }
-    toggleAiBtn.setOnAction { toggleAiDrawer() }
-    closeAiBtn.setOnAction { toggleAiDrawer() }
-
-    // Ollama AI wiring
-    aiModelField.text = Settings.ollamaModel
-    aiModelField.textProperty().addListener { _, _, newModel ->
-      Settings.ollamaModel = newModel?.trim() ?: "llama3"
-    }
-    refreshAiModelsBtn.setOnAction { refreshAiModels() }
-    aiContinueBtn.setOnAction { triggerAiAction("continue") }
-    aiPolishBtn.setOnAction { triggerAiAction("polish") }
-    aiSummarizeBtn.setOnAction { triggerAiAction("summarize") }
-    aiSendPromptBtn.setOnAction { triggerAiCustomPrompt() }
-    aiInsertBtn.setOnAction { insertAiResponse() }
-    aiReplaceBtn.setOnAction { replaceWithAiResponse() }
 
     // Restore cached content from DocumentStore if available
     if (coordinator.currentContent.isNotEmpty()) {
@@ -342,9 +276,6 @@ class PureWriter : Initializable {
       } else if (event.isShortcutDown && event.isShiftDown && event.code == KeyCode.B) {
         toggleBackupsDrawer()
         event.consume()
-      } else if (event.isShortcutDown && event.isShiftDown && event.code == KeyCode.A) {
-        toggleAiDrawer()
-        event.consume()
       } else if (event.isShortcutDown && event.isShiftDown && event.code == KeyCode.D) {
         // Toggle distraction-free mode (hide/show status bar)
         val visible = !statusBar.isVisible
@@ -407,119 +338,13 @@ class PureWriter : Initializable {
     }
   }
 
-  private fun toggleAiDrawer() {
-    val show = !aiDrawer.isVisible
-    aiDrawer.isVisible = show
-    aiDrawer.isManaged = show
-    if (show) {
-      backupsDrawer.isVisible = false
-      backupsDrawer.isManaged = false
-    }
-  }
-
   private fun toggleBackupsDrawer() {
     val show = !backupsDrawer.isVisible
     backupsDrawer.isVisible = show
     backupsDrawer.isManaged = show
     if (show) {
-      aiDrawer.isVisible = false
-      aiDrawer.isManaged = false
       refreshBackups()
     }
-  }
-
-  private fun refreshAiModels() {
-    Completable.fromAction {
-      val models = ollamaClient.listModels()
-      Platform.runLater {
-        if (models.isNotEmpty()) {
-          aiModelField.text = models.first()
-          Settings.ollamaModel = models.first()
-        }
-      }
-    }.subscribeOn(Schedulers.io()).subscribe({}, {})
-  }
-
-  private fun triggerAiAction(action: String) {
-    val fullText = contentView.text ?: ""
-    val selectedText = contentView.selectedText ?: ""
-    val targetText = if (selectedText.isNotBlank()) selectedText else fullText
-
-    if (targetText.isBlank()) {
-      aiResponseArea.text = "Document buffer is empty."
-      return
-    }
-
-    val (systemPrompt, userPrompt) = when (action) {
-      "continue" -> Pair(
-        "You are an expert creative writer. Continue the story naturally in the same style and language without repeating what came before.",
-        targetText
-      )
-      "polish" -> Pair(
-        "You are a professional editor. Improve flow, grammar, diction, and readability while preserving the original meaning and language. Return only the revised text.",
-        targetText
-      )
-      "summarize" -> Pair(
-        "You are a concise summarizer. Provide a clean, insightful summary of the following content in the same language.",
-        targetText
-      )
-      else -> Pair(null, targetText)
-    }
-
-    sendToOllama(systemPrompt, userPrompt)
-  }
-
-  private fun triggerAiCustomPrompt() {
-    val customInstruction = aiPromptArea.text?.trim() ?: ""
-    val fullText = contentView.text ?: ""
-    val selectedText = contentView.selectedText ?: ""
-    val contextText = if (selectedText.isNotBlank()) selectedText else fullText
-
-    if (customInstruction.isBlank() && contextText.isBlank()) {
-      aiResponseArea.text = "Please enter an instruction or write some text."
-      return
-    }
-
-    val userPrompt = if (contextText.isNotBlank()) {
-      "$customInstruction\n\n--- Context ---\n$contextText"
-    } else {
-      customInstruction
-    }
-
-    sendToOllama("You are a helpful creative writing AI assistant for PureWPlus.", userPrompt)
-  }
-
-  private fun sendToOllama(systemPrompt: String?, userPrompt: String) {
-    aiResponseArea.text = "Thinking..."
-    val model = aiModelField.text.trim().ifEmpty { "llama3" }
-
-    Completable.fromAction {
-      try {
-        val reply = ollamaClient.generate(model, userPrompt, systemPrompt)
-        Platform.runLater {
-          aiResponseArea.text = reply
-        }
-      } catch (e: Exception) {
-        Platform.runLater {
-          aiResponseArea.text = "Error connecting to Ollama:\n${e.message}\n\nMake sure Ollama is running (`ollama serve`)."
-        }
-      }
-    }.subscribeOn(Schedulers.io()).subscribe({}, {})
-  }
-
-  private fun insertAiResponse() {
-    val reply = aiResponseArea.text ?: return
-    if (reply.isBlank() || reply.startsWith("Thinking...") || reply.startsWith("Error")) return
-    val caret = contentView.caretPosition
-    contentView.insertText(caret, "\n\n$reply\n\n")
-  }
-
-  private fun replaceWithAiResponse() {
-    val reply = aiResponseArea.text ?: return
-    if (reply.isBlank() || reply.startsWith("Thinking...") || reply.startsWith("Error")) return
-    // Pre-replace backup snapshot
-    coordinator.backupEngine.createBackup("active", contentView.text ?: "", title, reason = "pre-ai-replace")
-    contentView.replaceText(reply)
   }
 
   private fun refreshBackups() {
