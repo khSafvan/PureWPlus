@@ -33,9 +33,7 @@ data class AppConfig(
   var darkMode: Boolean = false,
   var autoBackup: Boolean = true,
   var backupRetentionDays: Int = 30,
-  var lastDocumentId: String? = null,
-  var ollamaHost: String = "http://localhost:11434",
-  var ollamaModel: String = "llama3"
+  var lastDocumentId: String? = null
 )
 
 class ConfigManager(
