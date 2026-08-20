@@ -120,6 +120,30 @@ class PureWriter : Initializable {
   private lateinit var statusCountLabel: Label
 
   @FXML
+  private lateinit var readModeBanner: HBox
+
+  @FXML
+  private lateinit var readModeLabel: Label
+
+  @FXML
+  private lateinit var exitReadModeBtn: Button
+
+  @FXML
+  private lateinit var fontChoiceBtn: Button
+
+  @FXML
+  private lateinit var fontDecBtn: Button
+
+  @FXML
+  private lateinit var fontSizeLabel: Label
+
+  @FXML
+  private lateinit var fontIncBtn: Button
+
+  @FXML
+  private lateinit var toggleReadModeBtn: Button
+
+  @FXML
   private lateinit var toggleTypewriterBtn: Button
 
   @FXML
@@ -132,7 +156,14 @@ class PureWriter : Initializable {
 
   private var title = "Untitled"
   private var isTypewriterMode = false
+  private var isReadMode = false
   private var backupEntries: List<BackupEntry> = emptyList()
+
+  private val fontFamilies = mapOf(
+    "sans" to "\"Inter\", \"Source Han Sans CN Light\", \"Source Han Sans CN\", \"Segoe UI\", sans-serif",
+    "serif" to "\"DejaVu Serif\", \"Georgia\", \"Source Han Serif SC\", \"Times New Roman\", serif",
+    "mono" to "\"JetBrainsMono Nerd Font\", \"FiraCode Nerd Font Mono\", \"DejaVu Sans Mono\", \"Consolas\", monospace"
+  )
 
   override fun initialize(location: URL?, resources: ResourceBundle?) {
     rootLayout.styleClass.addAll("pane")
@@ -150,7 +181,10 @@ class PureWriter : Initializable {
     dayNightSwitch.image = Image(javaClass.getResourceAsStream("moon.png"))
     dayNightSwitch.setOnMouseClicked {
       Settings.darkMode = (!Settings.darkMode)
-        .also { mainStage.scene.setDarkMode(it) }
+        .also {
+          mainStage.scene.setDarkMode(it)
+          applyTypography()
+        }
     }
 
     // Localize UI labels
@@ -158,15 +192,25 @@ class PureWriter : Initializable {
     restoreBackupBtn.text = I18n.get("drawer.restore")
     toggleTypewriterBtn.text = I18n.get("menu.typewriter")
     toggleDrawerBtn.text = I18n.get("drawer.backups")
+    toggleReadModeBtn.text = I18n.get("menu.read_mode")
+    readModeLabel.text = I18n.get("read_mode.active")
+    exitReadModeBtn.text = I18n.get("read_mode.exit")
     emptyView.text = I18n.get("empty.title", version)
     ipNoteLabel.text = I18n.get("ip.note")
     ipBottomLabel.text = I18n.get("ip.bottom", version, appVersion)
 
-    // Setup Drawer and Action listeners
+    // Setup Drawer, Typography, and Action listeners
     closeDrawerBtn.setOnAction { toggleBackupsDrawer() }
     toggleDrawerBtn.setOnAction { toggleBackupsDrawer() }
     restoreBackupBtn.setOnAction { restoreSelectedBackup() }
     toggleTypewriterBtn.setOnAction { toggleTypewriterMode() }
+    toggleReadModeBtn.setOnAction { toggleReadMode() }
+    exitReadModeBtn.setOnAction { setReadMode(false) }
+    fontChoiceBtn.setOnAction { cycleFontChoice() }
+    fontDecBtn.setOnAction { changeFontSize(-1) }
+    fontIncBtn.setOnAction { changeFontSize(1) }
+
+    applyTypography()
 
     // Restore cached content from DocumentStore if available
     if (coordinator.currentContent.isNotEmpty()) {
@@ -269,7 +313,10 @@ class PureWriter : Initializable {
 
     // Keyboard Shortcuts
     rootLayout.setOnKeyPressed { event ->
-      if (event.isShortcutDown && event.code == KeyCode.S) {
+      if (event.code == KeyCode.ESCAPE && isReadMode) {
+        setReadMode(false)
+        event.consume()
+      } else if (event.isShortcutDown && event.code == KeyCode.S) {
         coordinator.documentStore.saveDocument("active", title, contentView.text ?: "", isDirty = false)
         setSaveStatus(true)
         event.consume()
@@ -281,6 +328,22 @@ class PureWriter : Initializable {
         val visible = !statusBar.isVisible
         statusBar.isVisible = visible
         statusBar.isManaged = visible
+        event.consume()
+      } else if (event.isShortcutDown && event.isShiftDown && event.code == KeyCode.R) {
+        toggleReadMode()
+        event.consume()
+      } else if (event.isShortcutDown && event.isShiftDown && event.code == KeyCode.F) {
+        cycleFontChoice()
+        event.consume()
+      } else if (event.isShortcutDown && (event.code == KeyCode.EQUALS || event.code == KeyCode.PLUS || event.code == KeyCode.ADD)) {
+        changeFontSize(1)
+        event.consume()
+      } else if (event.isShortcutDown && (event.code == KeyCode.MINUS || event.code == KeyCode.SUBTRACT)) {
+        changeFontSize(-1)
+        event.consume()
+      } else if (event.isShortcutDown && (event.code == KeyCode.DIGIT0 || event.code == KeyCode.NUMPAD0)) {
+        Settings.fontSize = 18
+        applyTypography()
         event.consume()
       } else if (event.code == KeyCode.F11) {
         runCatching { mainStage.isFullScreen = !mainStage.isFullScreen }
@@ -336,6 +399,65 @@ class PureWriter : Initializable {
     } else {
       toggleTypewriterBtn.style = ""
     }
+  }
+
+  private fun cycleFontChoice() {
+    val next = when (Settings.fontChoice.toLowerCase()) {
+      "sans" -> "serif"
+      "serif" -> "mono"
+      else -> "sans"
+    }
+    Settings.fontChoice = next
+    applyTypography()
+  }
+
+  private fun changeFontSize(delta: Int) {
+    val current = Settings.fontSize
+    val updated = (current + delta).coerceIn(12, 36)
+    if (updated != current) {
+      Settings.fontSize = updated
+      applyTypography()
+    }
+  }
+
+  private fun toggleReadMode() {
+    setReadMode(!isReadMode)
+  }
+
+  private fun setReadMode(active: Boolean) {
+    isReadMode = active
+    contentView.isEditable = !active
+    readModeBanner.isVisible = active
+    readModeBanner.isManaged = active
+
+    if (active) {
+      if (!contentView.styleClass.contains("read-mode")) {
+        contentView.styleClass.add("read-mode")
+      }
+      toggleReadModeBtn.style = "-fx-border-color: #10B981; -fx-text-fill: #10B981;"
+    } else {
+      contentView.styleClass.remove("read-mode")
+      toggleReadModeBtn.style = ""
+    }
+    applyTypography()
+  }
+
+  private fun applyTypography() {
+    val choice = Settings.fontChoice.toLowerCase()
+    val family = fontFamilies[choice] ?: fontFamilies["sans"]!!
+    val size = Settings.fontSize.coerceIn(12, 36)
+    val lineSpacing = if (isReadMode) (size * 0.65).toInt() else 8
+    val maxWidth = if (isReadMode) 760.0 else 840.0
+
+    contentView.maxWidth = maxWidth
+    fontSizeLabel.text = "$size"
+    fontChoiceBtn.text = when (choice) {
+      "serif" -> I18n.get("font.serif")
+      "mono" -> I18n.get("font.mono")
+      else -> I18n.get("font.sans")
+    }
+
+    contentView.style = "-fx-font-family: $family; -fx-font-size: ${size}px; -fx-line-spacing: ${lineSpacing}px;"
   }
 
   private fun toggleBackupsDrawer() {
