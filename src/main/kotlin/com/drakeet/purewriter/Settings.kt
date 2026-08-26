@@ -41,4 +41,16 @@ object Settings {
     set(value) {
       configManager.update { ip = value }
     }
+
+  var fontChoice: String
+    get() = configManager.config.fontChoice
+    set(value) {
+      configManager.update { fontChoice = value }
+    }
+
+  var fontSize: Int
+    get() = configManager.config.fontSize
+    set(value) {
+      configManager.update { fontSize = value }
+    }
 }
