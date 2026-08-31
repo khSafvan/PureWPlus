@@ -177,3 +177,66 @@
 .icon-button:hover {
     -fx-text-fill: #FFFFFF;
 }
+
+/* Typography & Read Mode */
+.status-button-compact {
+    -fx-background-color: transparent;
+    -fx-border-color: #27272A;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-text-fill: #A1A1AA;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 2px 7px;
+    -fx-cursor: hand;
+}
+
+.status-button-compact:hover {
+    -fx-background-color: #27272A;
+    -fx-text-fill: #FFFFFF;
+}
+
+.status-text-bold {
+    -fx-text-fill: #D4D4D8;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.read-mode-banner {
+    -fx-background-color: #27272A;
+    -fx-border-color: #3F3F46;
+    -fx-border-radius: 18px;
+    -fx-background-radius: 18px;
+    -fx-padding: 4px 12px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.25), 8, 0, 0, 2);
+}
+
+.read-mode-banner-text {
+    -fx-text-fill: #E4E4E7;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.read-mode-exit-btn {
+    -fx-background-color: #DC2626;
+    -fx-text-fill: #FFFFFF;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 2px 8px;
+    -fx-cursor: hand;
+}
+
+.read-mode-exit-btn:hover {
+    -fx-background-color: #B91C1C;
+}
+
+.read-mode.text-area {
+    -fx-background-color: transparent, #151518, transparent, #151518;
+    -fx-text-fill: #D4D4D8;
+}
+
+.read-mode.text-area .content {
+    -fx-background-color: transparent, #151518, transparent, #151518;
+}
