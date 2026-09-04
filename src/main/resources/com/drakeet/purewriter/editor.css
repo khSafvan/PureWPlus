@@ -230,3 +230,66 @@
     -fx-text-fill: #1D4ED8;
     -fx-font-weight: bold;
 }
+
+/* Typography & Read Mode */
+.status-button-compact {
+    -fx-background-color: transparent;
+    -fx-border-color: #E4E4E7;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-text-fill: #52525B;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 2px 7px;
+    -fx-cursor: hand;
+}
+
+.status-button-compact:hover {
+    -fx-background-color: #E4E4E7;
+    -fx-text-fill: #18181B;
+}
+
+.status-text-bold {
+    -fx-text-fill: #3F3F46;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.read-mode-banner {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E4E4E7;
+    -fx-border-radius: 18px;
+    -fx-background-radius: 18px;
+    -fx-padding: 4px 12px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.06), 8, 0, 0, 2);
+}
+
+.read-mode-banner-text {
+    -fx-text-fill: #3F3F46;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.read-mode-exit-btn {
+    -fx-background-color: #EF4444;
+    -fx-text-fill: #FFFFFF;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 2px 8px;
+    -fx-cursor: hand;
+}
+
+.read-mode-exit-btn:hover {
+    -fx-background-color: #DC2626;
+}
+
+.read-mode.text-area {
+    -fx-background-color: transparent, #FAF7F2, transparent, #FAF7F2;
+    -fx-text-fill: #2C2825;
+}
+
+.read-mode.text-area .content {
+    -fx-background-color: transparent, #FAF7F2, transparent, #FAF7F2;
+}
