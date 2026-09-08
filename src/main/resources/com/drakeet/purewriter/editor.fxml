@@ -34,6 +34,16 @@
                 </font>
             </TextArea>
 
+            <HBox fx:id="readModeBanner" alignment="CENTER" maxHeight="34.0" maxWidth="280.0" spacing="10.0" styleClass="read-mode-banner" visible="false" managed="false" StackPane.alignment="TOP_RIGHT">
+                <StackPane.margin>
+                    <Insets top="16.0" right="28.0"/>
+                </StackPane.margin>
+                <children>
+                    <Label fx:id="readModeLabel" text="📖 Reading Mode" styleClass="read-mode-banner-text"/>
+                    <Button fx:id="exitReadModeBtn" text="Exit" styleClass="read-mode-exit-btn"/>
+                </children>
+            </HBox>
+
             <Label fx:id="emptyView" alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="centeredTextArea" textAlignment="CENTER">
                 <font>
                     <Font name="Source Han Sans CN" size="18.0"/>
@@ -108,6 +118,12 @@
 
                 <Label fx:id="statusCountLabel" text="0 words · 0 chars" styleClass="status-text"/>
                 <Label text="·" styleClass="status-separator"/>
+                <Button fx:id="fontChoiceBtn" text="Sans" styleClass="status-button"/>
+                <Button fx:id="fontDecBtn" text="A-" styleClass="status-button-compact"/>
+                <Label fx:id="fontSizeLabel" text="18" styleClass="status-text-bold"/>
+                <Button fx:id="fontIncBtn" text="A+" styleClass="status-button-compact"/>
+                <Label text="·" styleClass="status-separator"/>
+                <Button fx:id="toggleReadModeBtn" text="Read" styleClass="status-button"/>
                 <Button fx:id="toggleTypewriterBtn" text="Typewriter" styleClass="status-button"/>
                 <Button fx:id="toggleDrawerBtn" text="Backups" styleClass="status-button"/>
                 <ImageView fx:id="dayNightSwitch" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" styleClass="theme-icon">
