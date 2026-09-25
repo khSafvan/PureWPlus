@@ -34,6 +34,10 @@ class I18nTest {
     assertEquals("PureWPlus", I18n.get("app.name"))
     assertEquals("Connected", I18n.get("status.connected"))
     assertEquals("Offline", I18n.get("status.disconnected"))
+    assertEquals("Read Mode", I18n.get("menu.read_mode"))
+    assertEquals("Sans", I18n.get("font.sans"))
+    assertEquals("Serif", I18n.get("font.serif"))
+    assertEquals("Mono", I18n.get("font.mono"))
 
     val formatted = I18n.get("status.words", 100, 500)
     assertTrue("Should format arguments", formatted.contains("100 words"))
