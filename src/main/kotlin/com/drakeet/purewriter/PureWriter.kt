@@ -30,6 +30,7 @@ import com.drakeet.purewriter.net.Client
 import com.drakeet.purewriter.net.PingPongDelegate
 import com.drakeet.purewriter.net.sendArticle
 import com.drakeet.purewriter.storage.BackupEntry
+import com.drakeet.purewriter.storage.DocumentExporter
 import com.drakeet.purewriter.sync.SyncCoordinator
 import io.netty.channel.Channel
 import io.reactivex.Completable
@@ -52,6 +53,7 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.StackPane
 import javafx.scene.layout.VBox
 import javafx.scene.text.Font
+import javafx.stage.FileChooser
 import javafx.util.Duration
 import java.net.URL
 import java.text.SimpleDateFormat
@@ -149,6 +151,42 @@ class PureWriter : Initializable {
   @FXML
   private lateinit var toggleDrawerBtn: Button
 
+  @FXML
+  private lateinit var exportBtn: Button
+
+  @FXML
+  private lateinit var findReplaceBox: VBox
+
+  @FXML
+  private lateinit var findField: TextField
+
+  @FXML
+  private lateinit var findMatchesLabel: Label
+
+  @FXML
+  private lateinit var prevMatchBtn: Button
+
+  @FXML
+  private lateinit var nextMatchBtn: Button
+
+  @FXML
+  private lateinit var toggleReplaceBtn: Button
+
+  @FXML
+  private lateinit var closeFindBtn: Button
+
+  @FXML
+  private lateinit var replaceRow: HBox
+
+  @FXML
+  private lateinit var replaceField: TextField
+
+  @FXML
+  private lateinit var replaceBtn: Button
+
+  @FXML
+  private lateinit var replaceAllBtn: Button
+
   private val client = Client()
   private val coordinator = SyncCoordinator.default
 
@@ -158,6 +196,9 @@ class PureWriter : Initializable {
   private var isTypewriterMode = false
   private var isReadMode = false
   private var backupEntries: List<BackupEntry> = emptyList()
+  private var searchMatches: List<Int> = emptyList()
+  private var currentMatchIndex = -1
+  private var isReplaceExpanded = false
 
   private val fontFamilies = mapOf(
     "sans" to "\"Inter\", \"Source Han Sans CN Light\", \"Source Han Sans CN\", \"Segoe UI\", sans-serif",
@@ -195,6 +236,11 @@ class PureWriter : Initializable {
     toggleReadModeBtn.text = I18n.get("menu.read_mode")
     readModeLabel.text = I18n.get("read_mode.active")
     exitReadModeBtn.text = I18n.get("read_mode.exit")
+    exportBtn.text = I18n.get("menu.export")
+    findField.promptText = I18n.get("find.placeholder")
+    replaceField.promptText = I18n.get("find.replace_placeholder")
+    replaceBtn.text = I18n.get("find.replace")
+    replaceAllBtn.text = I18n.get("find.replace_all")
     emptyView.text = I18n.get("empty.title", version)
     ipNoteLabel.text = I18n.get("ip.note")
     ipBottomLabel.text = I18n.get("ip.bottom", version, appVersion)
@@ -209,6 +255,39 @@ class PureWriter : Initializable {
     fontChoiceBtn.setOnAction { cycleFontChoice() }
     fontDecBtn.setOnAction { changeFontSize(-1) }
     fontIncBtn.setOnAction { changeFontSize(1) }
+    exportBtn.setOnAction { exportCurrentDocument() }
+
+    // Find and Replace listeners
+    findField.textProperty().addListener { _, _, newQuery ->
+      updateSearch(newQuery ?: "")
+    }
+
+    findField.setOnKeyPressed { e ->
+      if (e.code == KeyCode.ENTER) {
+        if (e.isShiftDown) findPrev() else findNext()
+        e.consume()
+      } else if (e.code == KeyCode.ESCAPE) {
+        hideFindBar()
+        e.consume()
+      }
+    }
+
+    replaceField.setOnKeyPressed { e ->
+      if (e.code == KeyCode.ENTER) {
+        replaceCurrent()
+        e.consume()
+      } else if (e.code == KeyCode.ESCAPE) {
+        hideFindBar()
+        e.consume()
+      }
+    }
+
+    prevMatchBtn.setOnAction { findPrev() }
+    nextMatchBtn.setOnAction { findNext() }
+    toggleReplaceBtn.setOnAction { toggleReplaceRow() }
+    closeFindBtn.setOnAction { hideFindBar() }
+    replaceBtn.setOnAction { replaceCurrent() }
+    replaceAllBtn.setOnAction { replaceAll() }
 
     applyTypography()
 
@@ -313,8 +392,22 @@ class PureWriter : Initializable {
 
     // Keyboard Shortcuts
     rootLayout.setOnKeyPressed { event ->
-      if (event.code == KeyCode.ESCAPE && isReadMode) {
-        setReadMode(false)
+      if (event.code == KeyCode.ESCAPE) {
+        if (findReplaceBox.isVisible) {
+          hideFindBar()
+          event.consume()
+        } else if (isReadMode) {
+          setReadMode(false)
+          event.consume()
+        }
+      } else if (event.isShortcutDown && !event.isShiftDown && event.code == KeyCode.F) {
+        showFindBar(expandReplace = false)
+        event.consume()
+      } else if (event.isShortcutDown && !event.isShiftDown && (event.code == KeyCode.H || event.code == KeyCode.R)) {
+        showFindBar(expandReplace = true)
+        event.consume()
+      } else if (event.isShortcutDown && event.isShiftDown && event.code == KeyCode.E) {
+        exportCurrentDocument()
         event.consume()
       } else if (event.isShortcutDown && event.code == KeyCode.S) {
         coordinator.documentStore.saveDocument("active", title, contentView.text ?: "", isDirty = false)
@@ -458,6 +551,159 @@ class PureWriter : Initializable {
     }
 
     contentView.style = "-fx-font-family: $family; -fx-font-size: ${size}px; -fx-line-spacing: ${lineSpacing}px;"
+  }
+
+  private fun showFindBar(expandReplace: Boolean = false) {
+    findReplaceBox.isVisible = true
+    findReplaceBox.isManaged = true
+    if (expandReplace) {
+      isReplaceExpanded = true
+      replaceRow.isVisible = true
+      replaceRow.isManaged = true
+    }
+    Platform.runLater {
+      findField.requestFocus()
+      val selectedText = contentView.selectedText
+      if (!selectedText.isNullOrEmpty() && !selectedText.contains("\n")) {
+        findField.text = selectedText
+      }
+      findField.selectAll()
+      updateSearch(findField.text ?: "")
+    }
+  }
+
+  private fun hideFindBar() {
+    findReplaceBox.isVisible = false
+    findReplaceBox.isManaged = false
+    searchMatches = emptyList()
+    currentMatchIndex = -1
+    findMatchesLabel.text = ""
+    contentView.requestFocus()
+  }
+
+  private fun toggleReplaceRow() {
+    isReplaceExpanded = !isReplaceExpanded
+    replaceRow.isVisible = isReplaceExpanded
+    replaceRow.isManaged = isReplaceExpanded
+    if (isReplaceExpanded) {
+      replaceField.requestFocus()
+    } else {
+      findField.requestFocus()
+    }
+  }
+
+  private fun updateSearch(query: String) {
+    val text = contentView.text ?: ""
+    if (query.isEmpty() || text.isEmpty()) {
+      searchMatches = emptyList()
+      currentMatchIndex = -1
+      findMatchesLabel.text = ""
+      return
+    }
+
+    val matches = mutableListOf<Int>()
+    val lowerText = text.toLowerCase()
+    val lowerQuery = query.toLowerCase()
+    var index = lowerText.indexOf(lowerQuery)
+    while (index >= 0) {
+      matches.add(index)
+      index = lowerText.indexOf(lowerQuery, index + lowerQuery.length)
+    }
+
+    searchMatches = matches
+    if (matches.isNotEmpty()) {
+      val caret = contentView.caretPosition
+      val closest = matches.indexOfFirst { it >= caret }
+      currentMatchIndex = if (closest >= 0) closest else 0
+      highlightMatch(currentMatchIndex, query.length)
+    } else {
+      currentMatchIndex = -1
+      findMatchesLabel.text = "0 / 0"
+    }
+  }
+
+  private fun highlightMatch(index: Int, length: Int) {
+    if (index < 0 || index >= searchMatches.size) {
+      findMatchesLabel.text = "0 / 0"
+      return
+    }
+    val start = searchMatches[index]
+    val end = start + length
+    findMatchesLabel.text = "${index + 1} / ${searchMatches.size}"
+    contentView.selectRange(start, end)
+  }
+
+  private fun findNext() {
+    if (searchMatches.isEmpty()) return
+    val query = findField.text ?: ""
+    if (query.isEmpty()) return
+    currentMatchIndex = (currentMatchIndex + 1) % searchMatches.size
+    highlightMatch(currentMatchIndex, query.length)
+  }
+
+  private fun findPrev() {
+    if (searchMatches.isEmpty()) return
+    val query = findField.text ?: ""
+    if (query.isEmpty()) return
+    currentMatchIndex = if (currentMatchIndex - 1 < 0) searchMatches.size - 1 else currentMatchIndex - 1
+    highlightMatch(currentMatchIndex, query.length)
+  }
+
+  private fun replaceCurrent() {
+    val query = findField.text ?: ""
+    if (query.isEmpty() || searchMatches.isEmpty() || currentMatchIndex < 0) return
+    val replacement = replaceField.text ?: ""
+    val start = searchMatches[currentMatchIndex]
+    val end = start + query.length
+
+    // Zero data loss: create snapshot
+    coordinator.backupEngine.createBackup("active", contentView.text ?: "", title, reason = "pre-replace")
+
+    val currentText = contentView.text ?: ""
+    val newText = currentText.substring(0, start) + replacement + currentText.substring(end)
+    contentView.replaceText(newText)
+    coordinator.handleLocalTextChange(newText, channel)
+    setSaveStatus(channel?.isActive == true)
+
+    updateSearch(query)
+  }
+
+  private fun replaceAll() {
+    val query = findField.text ?: ""
+    if (query.isEmpty()) return
+    val currentText = contentView.text ?: ""
+    if (currentText.isEmpty()) return
+    val replacement = replaceField.text ?: ""
+
+    // Zero data loss: create snapshot
+    coordinator.backupEngine.createBackup("active", currentText, title, reason = "pre-replace-all")
+
+    val regex = Regex(Regex.escape(query), RegexOption.IGNORE_CASE)
+    val newText = regex.replace(currentText, Regex.escapeReplacement(replacement))
+    contentView.replaceText(newText)
+    coordinator.handleLocalTextChange(newText, channel)
+    setSaveStatus(channel?.isActive == true)
+
+    updateSearch(query)
+  }
+
+  private fun exportCurrentDocument() {
+    val chooser = FileChooser()
+    chooser.title = I18n.get("export.title")
+    val safeTitle = title.replace("[\\\\/:*?\"<>|]".toRegex(), "_").ifBlank { "Untitled" }
+    chooser.initialFileName = "$safeTitle.md"
+    chooser.extensionFilters.addAll(
+      FileChooser.ExtensionFilter("Markdown (*.md)", "*.md"),
+      FileChooser.ExtensionFilter("Plain Text (*.txt)", "*.txt"),
+      FileChooser.ExtensionFilter("HTML Document (*.html)", "*.html")
+    )
+    val file = chooser.showSaveDialog(mainStage) ?: return
+    val content = contentView.text ?: ""
+    when {
+      file.name.endsWith(".txt", ignoreCase = true) -> DocumentExporter.exportToPlainText(title, content, file)
+      file.name.endsWith(".html", ignoreCase = true) || file.name.endsWith(".htm", ignoreCase = true) -> DocumentExporter.exportToHtml(title, content, file)
+      else -> DocumentExporter.exportToMarkdown(title, content, file)
+    }
   }
 
   private fun toggleBackupsDrawer() {
