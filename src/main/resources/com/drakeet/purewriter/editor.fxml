@@ -44,6 +44,31 @@
                 </children>
             </HBox>
 
+            <VBox fx:id="findReplaceBox" alignment="TOP_RIGHT" maxHeight="-Infinity" maxWidth="380.0" spacing="6.0" styleClass="find-replace-pane" visible="false" managed="false" StackPane.alignment="TOP_RIGHT">
+                <StackPane.margin>
+                    <Insets top="16.0" right="28.0"/>
+                </StackPane.margin>
+                <children>
+                    <HBox alignment="CENTER_LEFT" spacing="6.0">
+                        <children>
+                            <TextField fx:id="findField" promptText="Find..." HBox.hgrow="ALWAYS" styleClass="find-field"/>
+                            <Label fx:id="findMatchesLabel" text="" styleClass="find-matches-label"/>
+                            <Button fx:id="prevMatchBtn" text="▲" styleClass="find-icon-btn"/>
+                            <Button fx:id="nextMatchBtn" text="▼" styleClass="find-icon-btn"/>
+                            <Button fx:id="toggleReplaceBtn" text="⇌" styleClass="find-icon-btn"/>
+                            <Button fx:id="closeFindBtn" text="✕" styleClass="find-icon-btn"/>
+                        </children>
+                    </HBox>
+                    <HBox fx:id="replaceRow" alignment="CENTER_LEFT" spacing="6.0" visible="false" managed="false">
+                        <children>
+                            <TextField fx:id="replaceField" promptText="Replace with..." HBox.hgrow="ALWAYS" styleClass="find-field"/>
+                            <Button fx:id="replaceBtn" text="Replace" styleClass="find-action-btn"/>
+                            <Button fx:id="replaceAllBtn" text="All" styleClass="find-action-btn"/>
+                        </children>
+                    </HBox>
+                </children>
+            </VBox>
+
             <Label fx:id="emptyView" alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" styleClass="centeredTextArea" textAlignment="CENTER">
                 <font>
                     <Font name="Source Han Sans CN" size="18.0"/>
@@ -125,6 +150,7 @@
                 <Label text="·" styleClass="status-separator"/>
                 <Button fx:id="toggleReadModeBtn" text="Read" styleClass="status-button"/>
                 <Button fx:id="toggleTypewriterBtn" text="Typewriter" styleClass="status-button"/>
+                <Button fx:id="exportBtn" text="Export" styleClass="status-button"/>
                 <Button fx:id="toggleDrawerBtn" text="Backups" styleClass="status-button"/>
                 <ImageView fx:id="dayNightSwitch" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" styleClass="theme-icon">
                     <HBox.margin>
