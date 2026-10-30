@@ -38,6 +38,8 @@ class I18nTest {
     assertEquals("Sans", I18n.get("font.sans"))
     assertEquals("Serif", I18n.get("font.serif"))
     assertEquals("Mono", I18n.get("font.mono"))
+    assertEquals("Find...", I18n.get("find.placeholder"))
+    assertEquals("Export", I18n.get("menu.export"))
 
     val formatted = I18n.get("status.words", 100, 500)
     assertTrue("Should format arguments", formatted.contains("100 words"))
