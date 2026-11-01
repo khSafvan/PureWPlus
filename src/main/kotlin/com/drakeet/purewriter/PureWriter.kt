@@ -59,6 +59,19 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 
+object MaterialIcons {
+  const val MENU_BOOK = "\uEA19"
+  const val KEYBOARD = "\uE312"
+  const val HISTORY = "\uE8B3"
+  const val DOWNLOAD = "\uF090"
+  const val DARK_MODE = "\uE51C"
+  const val LIGHT_MODE = "\uE518"
+  const val ARROW_UP = "\uE316"
+  const val ARROW_DOWN = "\uE313"
+  const val FIND_REPLACE = "\uE881"
+  const val CLOSE = "\uE5CD"
+}
+
 class PureWriter : Initializable {
 
   private val version = "0.3.1"
@@ -89,7 +102,7 @@ class PureWriter : Initializable {
   private lateinit var contentView: TextArea
 
   @FXML
-  private lateinit var dayNightSwitch: ImageView
+  private lateinit var dayNightSwitch: Button
 
   @FXML
   private lateinit var backupsDrawer: VBox
@@ -219,12 +232,15 @@ class PureWriter : Initializable {
       ipView.font = Font.loadFont(javaClass.getResourceAsStream("SourceHanSansCN-Light.ttf"), 18.toDouble()) ?: regularFont
     }
 
-    dayNightSwitch.image = Image(javaClass.getResourceAsStream("moon.png"))
-    dayNightSwitch.setOnMouseClicked {
+    Font.loadFont(javaClass.getResourceAsStream("MaterialSymbolsOutlined.ttf"), 16.toDouble())
+
+    updateThemeButton()
+    dayNightSwitch.setOnAction {
       Settings.darkMode = (!Settings.darkMode)
         .also {
           mainStage.scene.setDarkMode(it)
           applyTypography()
+          updateThemeButton()
         }
     }
 
@@ -235,6 +251,7 @@ class PureWriter : Initializable {
     toggleDrawerBtn.text = I18n.get("drawer.backups")
     toggleReadModeBtn.text = I18n.get("menu.read_mode")
     readModeLabel.text = I18n.get("read_mode.active")
+    readModeLabel.graphic = createIcon(MaterialIcons.MENU_BOOK, 15.0)
     exitReadModeBtn.text = I18n.get("read_mode.exit")
     exportBtn.text = I18n.get("menu.export")
     findField.promptText = I18n.get("find.placeholder")
@@ -256,6 +273,19 @@ class PureWriter : Initializable {
     fontDecBtn.setOnAction { changeFontSize(-1) }
     fontIncBtn.setOnAction { changeFontSize(1) }
     exportBtn.setOnAction { exportCurrentDocument() }
+
+    // Configure Material Symbols graphics
+    toggleReadModeBtn.graphic = createIcon(MaterialIcons.MENU_BOOK)
+    toggleTypewriterBtn.graphic = createIcon(MaterialIcons.KEYBOARD)
+    exportBtn.graphic = createIcon(MaterialIcons.DOWNLOAD)
+    toggleDrawerBtn.graphic = createIcon(MaterialIcons.HISTORY)
+
+    closeDrawerBtn.text = MaterialIcons.CLOSE
+    exitReadModeBtn.text = MaterialIcons.CLOSE
+    prevMatchBtn.text = MaterialIcons.ARROW_UP
+    nextMatchBtn.text = MaterialIcons.ARROW_DOWN
+    toggleReplaceBtn.text = MaterialIcons.FIND_REPLACE
+    closeFindBtn.text = MaterialIcons.CLOSE
 
     // Find and Replace listeners
     findField.textProperty().addListener { _, _, newQuery ->
@@ -482,6 +512,16 @@ class PureWriter : Initializable {
 
   private fun setSaveStatus(saved: Boolean) {
     statusSaveLabel.text = if (saved) I18n.get("status.saved") else I18n.get("status.unsaved")
+  }
+
+  private fun createIcon(symbol: String, size: Double = 15.0): Label {
+    return Label(symbol).apply {
+      style = "-fx-font-family: 'Material Symbols Outlined'; -fx-font-size: ${size}px;"
+    }
+  }
+
+  private fun updateThemeButton() {
+    dayNightSwitch.text = if (Settings.darkMode) MaterialIcons.LIGHT_MODE else MaterialIcons.DARK_MODE
   }
 
   private fun toggleTypewriterMode() {
