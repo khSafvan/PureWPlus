@@ -355,3 +355,16 @@
 .find-action-btn:hover {
     -fx-background-color: #1D4ED8;
 }
+
+/* Material Symbols Icon Font */
+.material-icon {
+    -fx-font-family: "Material Symbols Outlined";
+    -fx-font-size: 15px;
+    -fx-alignment: center;
+}
+
+.material-icon-lg {
+    -fx-font-family: "Material Symbols Outlined";
+    -fx-font-size: 18px;
+    -fx-alignment: center;
+}
