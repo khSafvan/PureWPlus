@@ -39,8 +39,8 @@
                     <Insets top="16.0" right="28.0"/>
                 </StackPane.margin>
                 <children>
-                    <Label fx:id="readModeLabel" text="📖 Reading Mode" styleClass="read-mode-banner-text"/>
-                    <Button fx:id="exitReadModeBtn" text="Exit" styleClass="read-mode-exit-btn"/>
+                    <Label fx:id="readModeLabel" text="Reading Mode" styleClass="read-mode-banner-text"/>
+                    <Button fx:id="exitReadModeBtn" styleClass="read-mode-exit-btn, material-icon"/>
                 </children>
             </HBox>
 
@@ -53,10 +53,10 @@
                         <children>
                             <TextField fx:id="findField" promptText="Find..." HBox.hgrow="ALWAYS" styleClass="find-field"/>
                             <Label fx:id="findMatchesLabel" text="" styleClass="find-matches-label"/>
-                            <Button fx:id="prevMatchBtn" text="▲" styleClass="find-icon-btn"/>
-                            <Button fx:id="nextMatchBtn" text="▼" styleClass="find-icon-btn"/>
-                            <Button fx:id="toggleReplaceBtn" text="⇌" styleClass="find-icon-btn"/>
-                            <Button fx:id="closeFindBtn" text="✕" styleClass="find-icon-btn"/>
+                            <Button fx:id="prevMatchBtn" styleClass="find-icon-btn, material-icon"/>
+                            <Button fx:id="nextMatchBtn" styleClass="find-icon-btn, material-icon"/>
+                            <Button fx:id="toggleReplaceBtn" styleClass="find-icon-btn, material-icon"/>
+                            <Button fx:id="closeFindBtn" styleClass="find-icon-btn, material-icon"/>
                         </children>
                     </HBox>
                     <HBox fx:id="replaceRow" alignment="CENTER_LEFT" spacing="6.0" visible="false" managed="false">
@@ -109,7 +109,7 @@
                 <HBox alignment="CENTER_LEFT" spacing="8.0">
                     <children>
                         <Label fx:id="drawerTitleLabel" text="Backups &amp; History" styleClass="drawer-title" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"/>
-                        <Button fx:id="closeDrawerBtn" text="✕" styleClass="icon-button"/>
+                        <Button fx:id="closeDrawerBtn" styleClass="icon-button, material-icon"/>
                     </children>
                     <VBox.margin>
                         <Insets bottom="10.0"/>
@@ -152,11 +152,11 @@
                 <Button fx:id="toggleTypewriterBtn" text="Typewriter" styleClass="status-button"/>
                 <Button fx:id="exportBtn" text="Export" styleClass="status-button"/>
                 <Button fx:id="toggleDrawerBtn" text="Backups" styleClass="status-button"/>
-                <ImageView fx:id="dayNightSwitch" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" styleClass="theme-icon">
+                <Button fx:id="dayNightSwitch" focusTraversable="false" styleClass="icon-button, material-icon">
                     <HBox.margin>
                         <Insets left="4.0"/>
                     </HBox.margin>
-                </ImageView>
+                </Button>
             </children>
         </HBox>
     </bottom>
