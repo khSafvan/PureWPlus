@@ -60,4 +60,16 @@ class AppConfigTest {
     assertEquals("serif", reloadedManager.config.fontChoice)
     assertEquals(22, reloadedManager.config.fontSize)
   }
+
+  @Test
+  fun testMaterialSymbolsFontLoad() {
+    val stream = javaClass.getResourceAsStream("/com/drakeet/purewriter/MaterialSymbolsOutlined.ttf")
+    assertNotNull("Font resource should exist", stream)
+    stream.use {
+      val font = javafx.scene.text.Font.loadFont(it, 16.0)
+      println("Loaded font from resource: ${font?.name}, family: ${font?.family}")
+      assertNotNull("Font should load from resource", font)
+      assertEquals("Material Symbols Outlined", font.family)
+    }
+  }
 }
